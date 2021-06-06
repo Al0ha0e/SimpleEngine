@@ -1,6 +1,4 @@
-#include <glad/glad.h>
-
-#include <GLFW/glfw3.h>
+#include "./common/common.h"
 
 #include <iostream>
 
@@ -13,6 +11,7 @@ const unsigned int SCR_HEIGHT = 600;
 
 int main()
 {
+
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -26,7 +25,7 @@ int main()
 
     // glfw window creation
     // --------------------
-    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SimpleEngine", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -44,6 +43,19 @@ int main()
         return -1;
     }
 
+    auto rder = std::make_shared<renderer::Renderer>();
+
+    auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./assets/shaders/v.txt", common::VERTEX_SHADER),
+                                                          common::Shader("./assets/shaders/f.txt", common::FRAGMENT_SHADER));
+
+    auto mesh = std::make_shared<common::ModelMesh>("./assets/models/test.txt");
+
+    common::GameObject object = common::GameObject(rder,
+                                                   shader,
+                                                   mesh);
+
+    object.OnStart();
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -54,8 +66,10 @@ int main()
 
         // render
         // ------
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        // glClear(GL_COLOR_BUFFER_BIT);
+
+        rder->Render();
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -63,9 +77,12 @@ int main()
         glfwPollEvents();
     }
 
+    object.Dispose();
+
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
+
     return 0;
 }
 
