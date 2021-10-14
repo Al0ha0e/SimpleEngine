@@ -48,10 +48,13 @@ int main()
     auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./assets/shaders/v.txt", common::VERTEX_SHADER),
                                                           common::Shader("./assets/shaders/f.txt", common::FRAGMENT_SHADER));
 
+    auto texture = std::make_shared<common::Texture>("./assets/textures/container.jpg");
+
     auto mesh = std::make_shared<common::ModelMesh>("./assets/models/test.txt");
 
     common::GameObject object = common::GameObject(rder,
                                                    shader,
+                                                   texture,
                                                    mesh);
 
     object.OnStart();

@@ -1,6 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <stb_image.h>
 #include "../render/renderer.h"
 
 #include <memory>
@@ -88,6 +89,35 @@ namespace common
         }
     };
 
+    //TODO Combine shaders and textures into a material
+    struct Texture
+    {
+        Texture() {}
+        Texture(std::string pth)
+        {
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            int width, height, nrChannels;
+            unsigned char *data = stbi_load(pth.c_str(), &width, &height, &nrChannels, 0);
+            if (data)
+            {
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                glGenerateMipmap(GL_TEXTURE_2D);
+            }
+            else
+            {
+                std::cout << "Failed to load texture" << std::endl;
+            }
+            stbi_image_free(data);
+        }
+        unsigned int texture;
+    };
+
+    //TODO layout description
     struct ModelMesh
     {
         ModelMesh() {}
@@ -128,8 +158,11 @@ namespace common
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
             glEnableVertexAttribArray(0);
+
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+            glEnableVertexAttribArray(1);
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
@@ -159,14 +192,16 @@ namespace common
 
         GameObject(std::shared_ptr<renderer::Renderer> rd,
                    std::shared_ptr<ShaderProgram> shader,
+                   std::shared_ptr<Texture> texture,
                    std::shared_ptr<ModelMesh> mesh) : rd(rd),
                                                       shader(shader),
+                                                      texture(texture),
                                                       mesh(mesh) {}
 
         virtual void OnStart()
         {
-            rd->GetRenderID(renderer::OPAQUE);
-            renderer::RenderQueueItem item(mesh->vao, shader->shader, mesh->id_count);
+            render_id = rd->GetRenderID(renderer::OPAQUE);
+            renderer::RenderQueueItem item(mesh->vao, shader->shader, texture->texture, mesh->id_count);
             rd->InsertToQueue(render_id, item, renderer::OPAQUE);
         }
         virtual void BeforeRender() {}
@@ -183,6 +218,7 @@ namespace common
     private:
         std::shared_ptr<renderer::Renderer> rd;
         std::shared_ptr<ShaderProgram> shader;
+        std::shared_ptr<Texture> texture;
         std::shared_ptr<ModelMesh> mesh;
         int render_id;
     };

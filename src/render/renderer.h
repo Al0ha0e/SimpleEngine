@@ -24,19 +24,23 @@ namespace renderer
     {
         unsigned int vao;
         unsigned int shader;
+        unsigned int texture;
         unsigned int vertex_cnt;
 
         virtual void Draw()
         {
             glUseProgram(shader);
             glBindVertexArray(vao);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, texture);
             glDrawElements(GL_TRIANGLES, vertex_cnt, GL_UNSIGNED_INT, 0);
         }
 
         RenderQueueItem() {}
         RenderQueueItem(unsigned int vao,
                         unsigned int shader,
-                        unsigned int vertex_cnt) : vao(vao), shader(shader), vertex_cnt(vertex_cnt) {}
+                        unsigned int texture,
+                        unsigned int vertex_cnt) : vao(vao), shader(shader), texture(texture), vertex_cnt(vertex_cnt) {}
     };
 
     typedef unsigned long long render_id;
