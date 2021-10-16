@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "../render/renderer.h"
+#include <memory>
 
 namespace common
 {
@@ -13,13 +14,16 @@ namespace common
 
         GameObject(std::shared_ptr<renderer::Renderer> rd,
                    std::shared_ptr<Material> material,
-                   std::shared_ptr<ModelMesh> mesh) : rd(rd),
-                                                      material(material),
-                                                      mesh(mesh) {}
+                   std::shared_ptr<ModelMesh> mesh,
+                   glm::mat4 model_matrix) : rd(rd),
+                                             material(material),
+                                             mesh(mesh),
+                                             model_matrix(model_matrix) {}
 
         virtual void OnStart()
         {
             render_id = rd->GetRenderID(renderer::OPAQUE);
+            material->UpdateM(model_matrix);
             renderer::RenderQueueItem item(material, mesh, mesh->id_count);
             rd->InsertToQueue(render_id, item, renderer::OPAQUE);
         }
@@ -34,12 +38,14 @@ namespace common
                 material->Dispose();
         }
 
-    private:
+    protected:
         std::shared_ptr<renderer::Renderer> rd;
         std::shared_ptr<Material> material;
         std::shared_ptr<ModelMesh> mesh;
+        glm::mat4 model_matrix;
         int render_id;
     };
+
 } // namespace common
 
 #endif

@@ -8,7 +8,7 @@ namespace renderer
 
         for (auto &item : opaque_queue.queue)
         {
-            item.second.Draw();
+            item.second.Draw(main_camera->view, main_camera->projection);
         }
 
         glBindVertexArray(0);

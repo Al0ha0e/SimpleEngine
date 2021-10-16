@@ -45,7 +45,16 @@ int main()
         return -1;
     }
 
-    auto rder = std::make_shared<renderer::Renderer>();
+    glm::mat4 model(1.0f);
+    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    glm::mat4 view(1.0f);
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+    glm::mat4 projection(1.0f);
+    projection = glm::perspective(glm::radians(45.0f), SCR_WIDTH * 1.0f / SCR_HEIGHT, 0.1f, 100.0f);
+
+    auto cam = std::make_shared<renderer::Camera>(view, projection);
+
+    auto rder = std::make_shared<renderer::Renderer>(cam);
 
     auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./assets/shaders/v.txt", common::VERTEX_SHADER),
                                                           common::Shader("./assets/shaders/f.txt", common::FRAGMENT_SHADER));
@@ -54,9 +63,11 @@ int main()
 
     auto mesh = std::make_shared<common::ModelMesh>("./assets/models/test.txt");
 
-    auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, texture);
+    auto mat_args = std::make_shared<common::RenderArguments>(model, view, projection);
 
-    common::GameObject object = common::GameObject(rder, material, mesh);
+    auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, texture, mat_args);
+
+    common::GameObject object(rder, material, mesh, model);
 
     object.OnStart();
 

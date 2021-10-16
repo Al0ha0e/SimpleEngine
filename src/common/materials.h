@@ -5,13 +5,15 @@
 
 namespace builtin_materials
 {
-    struct NaiveMaterial : common::Material
+
+    struct NaiveMaterial : public common::Material
     {
         NaiveMaterial() {}
         NaiveMaterial(std::shared_ptr<common::ShaderProgram> shader,
-                      std::shared_ptr<common::Texture> texture) : texture(texture), Material(shader)
+                      std::shared_ptr<common::Texture> texture,
+                      std::shared_ptr<common::RenderArguments> args)
+            : texture(texture), Material(shader, args)
         {
-            std::cout << "material init" << std::endl;
         }
 
         virtual void PrepareForDraw()

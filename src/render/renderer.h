@@ -14,6 +14,17 @@
 namespace renderer
 {
 
+    class Camera
+    {
+    public:
+        glm::mat4 view;
+        glm::mat4 projection;
+
+        Camera() {}
+        Camera(glm::mat4 view,
+               glm::mat4 projection) : view(view), projection(projection) {}
+    };
+
     enum RenderMode
     {
         OPAQUE,
@@ -24,17 +35,14 @@ namespace renderer
 
     struct RenderQueueItem
     {
-
         std::shared_ptr<common::Material> material;
         std::shared_ptr<common::ModelMesh> mesh;
         unsigned int vertex_cnt;
 
-        virtual void Draw()
+        virtual void Draw(glm::mat4 view, glm::mat4 projection)
         {
-            // glUseProgram(shader);
-            // glBindVertexArray(vao);
-            // glActiveTexture(GL_TEXTURE0);
-            // glBindTexture(GL_TEXTURE_2D, texture);
+            material->UpdateV(view);
+            //material->UpdateP(projection);
             material->PrepareForDraw();
             mesh->PrepareForDraw();
             glDrawElements(GL_TRIANGLES, vertex_cnt, GL_UNSIGNED_INT, 0);
@@ -72,6 +80,7 @@ namespace renderer
     {
     public:
         Renderer() {}
+        Renderer(std::shared_ptr<Camera> main_camera) : main_camera(main_camera) {}
         void Render();
         render_id GetRenderID(RenderMode mode);
         void InsertToQueue(render_id id, RenderQueueItem item, RenderMode mode);
@@ -82,6 +91,7 @@ namespace renderer
         RenderQueue transparent_queue;
         RenderQueue opaque_shadow_queue;
         RenderQueue transparent_shadow_queue;
+        std::shared_ptr<Camera> main_camera;
     };
 }
 #endif
