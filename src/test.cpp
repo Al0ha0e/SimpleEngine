@@ -1,4 +1,6 @@
 #include "./common/common.h"
+#include "./common/materials.h"
+#include "./common/game_object.h"
 
 #include <iostream>
 
@@ -52,10 +54,9 @@ int main()
 
     auto mesh = std::make_shared<common::ModelMesh>("./assets/models/test.txt");
 
-    common::GameObject object = common::GameObject(rder,
-                                                   shader,
-                                                   texture,
-                                                   mesh);
+    auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, texture);
+
+    common::GameObject object = common::GameObject(rder, material, mesh);
 
     object.OnStart();
 

@@ -1,8 +1,9 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <stb_image.h>
-#include "../render/renderer.h"
 
 #include <memory>
 #include <string>
@@ -10,6 +11,9 @@
 #include <iostream>
 #include <sstream>
 #include <cstdlib>
+#include <vector>
+#include <list>
+#include <map>
 
 namespace common
 {
@@ -117,6 +121,20 @@ namespace common
         unsigned int texture;
     };
 
+    struct Material
+    {
+        Material() {}
+        Material(std::shared_ptr<ShaderProgram> shader) : shader(shader) {}
+        virtual void PrepareForDraw()
+        {
+            glUseProgram(shader->shader);
+        }
+
+        virtual void Dispose() {}
+
+        std::shared_ptr<ShaderProgram> shader;
+    };
+
     //TODO layout description
     struct ModelMesh
     {
@@ -175,6 +193,11 @@ namespace common
             glDeleteBuffers(1, &ebo);
         }
 
+        void PrepareForDraw()
+        {
+            glBindVertexArray(vao);
+        }
+
         std::vector<float> vertices;
         std::vector<unsigned int> indices;
 
@@ -185,42 +208,5 @@ namespace common
         unsigned int ebo;
     };
 
-    class GameObject
-    {
-    public:
-        GameObject() {}
-
-        GameObject(std::shared_ptr<renderer::Renderer> rd,
-                   std::shared_ptr<ShaderProgram> shader,
-                   std::shared_ptr<Texture> texture,
-                   std::shared_ptr<ModelMesh> mesh) : rd(rd),
-                                                      shader(shader),
-                                                      texture(texture),
-                                                      mesh(mesh) {}
-
-        virtual void OnStart()
-        {
-            render_id = rd->GetRenderID(renderer::OPAQUE);
-            renderer::RenderQueueItem item(mesh->vao, shader->shader, texture->texture, mesh->id_count);
-            rd->InsertToQueue(render_id, item, renderer::OPAQUE);
-        }
-        virtual void BeforeRender() {}
-        virtual void AfterRender() {}
-
-        virtual void Dispose()
-        {
-            if (mesh != nullptr)
-                mesh->Dispose();
-            if (shader != nullptr)
-                shader->Dispose();
-        }
-
-    private:
-        std::shared_ptr<renderer::Renderer> rd;
-        std::shared_ptr<ShaderProgram> shader;
-        std::shared_ptr<Texture> texture;
-        std::shared_ptr<ModelMesh> mesh;
-        int render_id;
-    };
 }
 #endif

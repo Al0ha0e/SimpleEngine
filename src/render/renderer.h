@@ -5,6 +5,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include "../common/common.h"
+
 #include <vector>
 #include <list>
 #include <map>
@@ -22,25 +24,26 @@ namespace renderer
 
     struct RenderQueueItem
     {
-        unsigned int vao;
-        unsigned int shader;
-        unsigned int texture;
+
+        std::shared_ptr<common::Material> material;
+        std::shared_ptr<common::ModelMesh> mesh;
         unsigned int vertex_cnt;
 
         virtual void Draw()
         {
-            glUseProgram(shader);
-            glBindVertexArray(vao);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, texture);
+            // glUseProgram(shader);
+            // glBindVertexArray(vao);
+            // glActiveTexture(GL_TEXTURE0);
+            // glBindTexture(GL_TEXTURE_2D, texture);
+            material->PrepareForDraw();
+            mesh->PrepareForDraw();
             glDrawElements(GL_TRIANGLES, vertex_cnt, GL_UNSIGNED_INT, 0);
         }
 
         RenderQueueItem() {}
-        RenderQueueItem(unsigned int vao,
-                        unsigned int shader,
-                        unsigned int texture,
-                        unsigned int vertex_cnt) : vao(vao), shader(shader), texture(texture), vertex_cnt(vertex_cnt) {}
+        RenderQueueItem(std::shared_ptr<common::Material> material,
+                        std::shared_ptr<common::ModelMesh> mesh,
+                        unsigned int vertex_cnt) : material(material), mesh(mesh), vertex_cnt(vertex_cnt) {}
     };
 
     typedef unsigned long long render_id;
