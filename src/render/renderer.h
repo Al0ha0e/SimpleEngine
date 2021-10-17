@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 
 #include "../common/common.h"
+#include "../events/event.h"
 
 #include <vector>
 #include <list>
@@ -14,7 +15,7 @@
 namespace renderer
 {
 
-    class Camera
+    class Camera : public common::EventListener
     {
     public:
         glm::mat4 view;
@@ -22,7 +23,16 @@ namespace renderer
 
         Camera() {}
         Camera(glm::mat4 view,
-               glm::mat4 projection) : view(view), projection(projection) {}
+               glm::mat4 projection) : view(view), projection(projection)
+        {
+            common::EventTransmitter::GetInstance()->SubmitEvent(
+                common::EventType::EVENT_WINDOW_RESIZE,
+                std::static_pointer_cast<common::EventListener>(std::shared_ptr<Camera>(this)));
+        }
+        virtual void OnWindowResize(std::shared_ptr<common::ED_WindowResize> desc)
+        {
+            projection = glm::perspective(glm::radians(45.0f), desc->width * 1.0f / desc->height, 0.1f, 100.0f);
+        }
     };
 
     enum RenderMode
@@ -42,7 +52,7 @@ namespace renderer
         virtual void Draw(glm::mat4 view, glm::mat4 projection)
         {
             material->UpdateV(view);
-            //material->UpdateP(projection);
+            material->UpdateP(projection);
             material->PrepareForDraw();
             mesh->PrepareForDraw();
             glDrawElements(GL_TRIANGLES, vertex_cnt, GL_UNSIGNED_INT, 0);
@@ -80,7 +90,10 @@ namespace renderer
     {
     public:
         Renderer() {}
-        Renderer(std::shared_ptr<Camera> main_camera) : main_camera(main_camera) {}
+        Renderer(std::shared_ptr<Camera> main_camera) : main_camera(main_camera)
+        {
+            glEnable(GL_DEPTH_TEST);
+        }
         void Render();
         render_id GetRenderID(RenderMode mode);
         void InsertToQueue(render_id id, RenderQueueItem item, RenderMode mode);

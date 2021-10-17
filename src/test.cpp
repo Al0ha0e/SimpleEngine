@@ -1,6 +1,7 @@
 #include "./common/common.h"
 #include "./common/materials.h"
 #include "./common/game_object.h"
+#include "./events/event.h"
 
 #include <iostream>
 
@@ -8,8 +9,8 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1024;
+const unsigned int SCR_HEIGHT = 768;
 
 int main()
 {
@@ -46,7 +47,7 @@ int main()
     }
 
     glm::mat4 model(1.0f);
-    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.5f, 0.0f));
     glm::mat4 view(1.0f);
     view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
     glm::mat4 projection(1.0f);
@@ -107,6 +108,14 @@ void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        auto desc = std::make_shared<common::ED_KeyboardPress>();
+        desc->keycode = GLFW_KEY_A;
+        common::EventTransmitter::GetInstance()->PublishEvent(
+            common::EventType::EVENT_KEYBOARD_PRESS,
+            std::static_pointer_cast<common::EventDescriptor>(desc));
+    }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -116,4 +125,10 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
     // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
+    auto desc = std::make_shared<common::ED_WindowResize>();
+    desc->height = height;
+    desc->width = width;
+    common::EventTransmitter::GetInstance()->PublishEvent(
+        common::EventType::EVENT_WINDOW_RESIZE,
+        std::static_pointer_cast<common::EventDescriptor>(desc));
 }
