@@ -13,6 +13,7 @@ namespace common
     {
         EVENT_WINDOW_RESIZE,
         EVENT_KEYBOARD_PRESS,
+        EVENT_MOUSE_MOVEMENT,
         EVENT_CUSTOM
     };
 
@@ -31,11 +32,17 @@ namespace common
         unsigned int keycode;
     };
 
+    struct ED_MouseMovement : public EventDescriptor
+    {
+        float x, y, dx, dy;
+    };
+
     class EventListener
     {
     public:
         virtual void OnWindowResize(std::shared_ptr<ED_WindowResize> desc) {}
         virtual void OnKeyBoardPress(std::shared_ptr<ED_KeyboardPress> desc) {}
+        virtual void OnMouseMove(std::shared_ptr<ED_MouseMovement> desc) {}
     };
 
     class EventTransmitter
@@ -73,7 +80,7 @@ namespace common
             return instance;
         }
 
-        int SubmitEvent(EventType tp, std::shared_ptr<EventListener> handler)
+        int SubscribeEvent(EventType tp, std::shared_ptr<EventListener> handler)
         {
             auto it = handlers.find(tp);
             hdlid_t id = ++handlerid;
@@ -100,6 +107,10 @@ namespace common
                 case EventType::EVENT_KEYBOARD_PRESS:
                     for (auto &handler : it->second)
                         handler.second->OnKeyBoardPress(std::static_pointer_cast<ED_KeyboardPress>(desc));
+                    break;
+                case EventType::EVENT_MOUSE_MOVEMENT:
+                    for (auto &handler : it->second)
+                        handler.second->OnMouseMove(std::static_pointer_cast<ED_MouseMovement>(desc));
                     break;
                 }
             }

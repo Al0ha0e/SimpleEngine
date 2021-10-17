@@ -6,6 +6,7 @@
 #include <iostream>
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
+void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void processInput(GLFWwindow *window);
 
 // settings
@@ -37,6 +38,7 @@ int main()
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
 
     // glad: load all OpenGL function pointers
     // ---------------------------------------
@@ -48,12 +50,16 @@ int main()
 
     glm::mat4 model(1.0f);
     model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.5f, 0.0f));
-    glm::mat4 view(1.0f);
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+    glm::mat4 view;
     glm::mat4 projection(1.0f);
     projection = glm::perspective(glm::radians(45.0f), SCR_WIDTH * 1.0f / SCR_HEIGHT, 0.1f, 100.0f);
 
-    auto cam = std::make_shared<renderer::Camera>(view, projection);
+    float camSpeed = 0.01;
+    glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+    //glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+    glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    auto cam = std::make_shared<renderer::Camera>(camSpeed, cameraPos, cameraUp, projection);
 
     auto rder = std::make_shared<renderer::Renderer>(cam);
 
@@ -116,6 +122,30 @@ void processInput(GLFWwindow *window)
             common::EventType::EVENT_KEYBOARD_PRESS,
             std::static_pointer_cast<common::EventDescriptor>(desc));
     }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        auto desc = std::make_shared<common::ED_KeyboardPress>();
+        desc->keycode = GLFW_KEY_W;
+        common::EventTransmitter::GetInstance()->PublishEvent(
+            common::EventType::EVENT_KEYBOARD_PRESS,
+            std::static_pointer_cast<common::EventDescriptor>(desc));
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        auto desc = std::make_shared<common::ED_KeyboardPress>();
+        desc->keycode = GLFW_KEY_S;
+        common::EventTransmitter::GetInstance()->PublishEvent(
+            common::EventType::EVENT_KEYBOARD_PRESS,
+            std::static_pointer_cast<common::EventDescriptor>(desc));
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        auto desc = std::make_shared<common::ED_KeyboardPress>();
+        desc->keycode = GLFW_KEY_D;
+        common::EventTransmitter::GetInstance()->PublishEvent(
+            common::EventType::EVENT_KEYBOARD_PRESS,
+            std::static_pointer_cast<common::EventDescriptor>(desc));
+    }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -130,5 +160,31 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
     desc->width = width;
     common::EventTransmitter::GetInstance()->PublishEvent(
         common::EventType::EVENT_WINDOW_RESIZE,
+        std::static_pointer_cast<common::EventDescriptor>(desc));
+}
+
+void mouse_callback(GLFWwindow *window, double xpos, double ypos)
+{
+    static bool firstMouse = true;
+    static float lastX, lastY;
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+    lastX = xpos;
+    lastY = ypos;
+
+    auto desc = std::make_shared<common::ED_MouseMovement>();
+    desc->dx = xoffset;
+    desc->dy = yoffset;
+    desc->x = xpos;
+    desc->y = ypos;
+    common::EventTransmitter::GetInstance()->PublishEvent(
+        common::EventType::EVENT_MOUSE_MOVEMENT,
         std::static_pointer_cast<common::EventDescriptor>(desc));
 }
