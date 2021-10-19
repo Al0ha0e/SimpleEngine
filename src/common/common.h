@@ -21,7 +21,6 @@
 
 namespace common
 {
-
     enum ShaderType
     {
         VERTEX_SHADER = GL_VERTEX_SHADER,

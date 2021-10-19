@@ -74,9 +74,13 @@ int main()
 
     auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, texture, mat_args);
 
-    common::GameObject object(rder, material, mesh, model);
+    auto object = std::make_shared<common::GameObject>(model);
 
-    object.OnStart();
+    auto render_component = std::make_shared<builtin_components::RenderableObject>(object, rder, material, mesh);
+
+    object->AddComponent(render_component);
+
+    object->OnStart();
 
     // render loop
     // -----------
@@ -99,7 +103,7 @@ int main()
         glfwPollEvents();
     }
 
-    object.Dispose();
+    object->Dispose();
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
