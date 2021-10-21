@@ -13,6 +13,57 @@ void processInput(GLFWwindow *window);
 const unsigned int SCR_WIDTH = 1024;
 const unsigned int SCR_HEIGHT = 768;
 
+class TestController : public common::EventListener
+{
+public:
+    std::shared_ptr<common::GameObject> object;
+    float moveSpeed;
+    float rotateSpeed;
+
+    TestController() {}
+    TestController(std::shared_ptr<common::GameObject> object,
+                   float moveSpeed,
+                   float rotateSpeed)
+        : object(object), moveSpeed(moveSpeed), rotateSpeed(rotateSpeed)
+    {
+        common::EventTransmitter::GetInstance()->SubscribeEvent(
+            common::EventType::EVENT_KEYBOARD_PRESS,
+            std::static_pointer_cast<common::EventListener>(std::shared_ptr<TestController>(this)));
+
+        common::EventTransmitter::GetInstance()->SubscribeEvent(
+            common::EventType::EVENT_MOUSE_MOVEMENT,
+            std::static_pointer_cast<common::EventListener>(std::shared_ptr<TestController>(this)));
+    }
+
+    virtual void OnKeyBoardPress(std::shared_ptr<common::ED_KeyboardPress> desc)
+    {
+        switch (desc->keycode)
+        {
+        case GLFW_KEY_W:
+            object->Transform(glm::vec3(0, moveSpeed, 0));
+            break;
+        case GLFW_KEY_A:
+            object->Transform(glm::vec3(-moveSpeed, 0, 0));
+            break;
+        case GLFW_KEY_S:
+            object->Transform(glm::vec3(0, -moveSpeed, 0));
+            break;
+        case GLFW_KEY_D:
+            object->Transform(glm::vec3(moveSpeed, 0, 0));
+            break;
+        }
+    }
+
+    virtual void OnMouseMove(std::shared_ptr<common::ED_MouseMovement> desc)
+    {
+        float xoffset = desc->dx;
+        float yoffset = desc->dy;
+        xoffset *= rotateSpeed;
+        yoffset *= rotateSpeed;
+        object->Rotate(xoffset, yoffset);
+    }
+};
+
 int main()
 {
 
@@ -50,18 +101,25 @@ int main()
 
     glm::mat4 model(1.0f);
     model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.5f, 0.0f));
+
+    glm::mat4 camModel;
+    glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+
+    common::TransformParameter tp(model, glm::vec3());
+    common::TransformParameter tpCam(camModel, cameraPos);
+
+    auto camObject = std::make_shared<common::GameObject>(tpCam);
+
     glm::mat4 view;
     glm::mat4 projection(1.0f);
     projection = glm::perspective(glm::radians(45.0f), SCR_WIDTH * 1.0f / SCR_HEIGHT, 0.1f, 100.0f);
 
     float camSpeed = 0.01;
-    glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-    //glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-    glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-    auto cam = std::make_shared<renderer::Camera>(camSpeed, cameraPos, cameraUp, projection);
+    auto rder = std::make_shared<renderer::Renderer>(view, projection);
 
-    auto rder = std::make_shared<renderer::Renderer>(cam);
+    auto cam = std::make_shared<builtin_components::Camera>(camObject, rder, projection);
+    camObject->AddComponent(cam);
 
     auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./assets/shaders/v.txt", common::VERTEX_SHADER),
                                                           common::Shader("./assets/shaders/f.txt", common::FRAGMENT_SHADER));
@@ -74,13 +132,15 @@ int main()
 
     auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, texture, mat_args);
 
-    auto object = std::make_shared<common::GameObject>(model);
+    auto object = std::make_shared<common::GameObject>(tp);
 
     auto render_component = std::make_shared<builtin_components::RenderableObject>(object, rder, material, mesh);
 
     object->AddComponent(render_component);
 
     object->OnStart();
+
+    TestController controller(camObject, camSpeed, 0.05f);
 
     // render loop
     // -----------

@@ -7,6 +7,33 @@
 
 namespace common
 {
+    struct TransformParameter
+    {
+        glm::mat4 model;
+        glm::vec3 pos;
+        glm::vec3 front;
+        glm::vec3 up;
+        float yaw;
+        float pitch;
+
+        TransformParameter() {}
+        TransformParameter(glm::mat4 model, glm::vec3 pos) : model(model), pos(pos)
+        {
+            up = glm::vec3(0.0f, 1.0f, 0.0f);
+            yaw = 270;
+            pitch = 0;
+            CalcFront();
+        }
+
+        void CalcFront()
+        {
+            front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+            front.y = sin(glm::radians(pitch));
+            front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+            front = glm::normalize(front);
+        }
+    };
+
     class GameObject;
     class Component
     {
@@ -18,7 +45,7 @@ namespace common
             return object;
         }
 
-        virtual void OnTransformed() {}
+        virtual void OnTransformed(TransformParameter &param) {}
         virtual void OnStart() {}
         virtual void Dispose() {}
 
@@ -31,8 +58,7 @@ namespace common
     public:
         GameObject() {}
 
-        GameObject(
-            glm::mat4 model_matrix) : model_matrix(model_matrix) {}
+        GameObject(TransformParameter tparam) : tParam(tparam) {}
 
         void AddComponent(std::shared_ptr<Component> component)
         {
@@ -57,15 +83,42 @@ namespace common
             }
         }
 
-        glm::mat4 GetTransformInfo()
+        TransformParameter GetTransformInfo()
         {
-            return model_matrix;
+            return tParam;
+        }
+
+        void Rotate(float detYaw, float detPitch)
+        {
+            //TODO model_matrix
+            tParam.yaw += detYaw;
+            tParam.pitch += detPitch;
+            if (tParam.pitch > 89.0f)
+                tParam.pitch = 89.0f;
+            if (tParam.pitch < -89.0f)
+                tParam.pitch = -89.0f;
+            tParam.CalcFront();
+            for (auto &component : components)
+            {
+                component->OnTransformed(tParam);
+            }
+        }
+
+        void Transform(glm::vec3 det)
+        {
+            //TODO model_matrix
+            //TODO
+            tParam.pos += det.x * glm::normalize(glm::cross(tParam.front, tParam.up));
+            tParam.pos += det.y * glm::normalize(tParam.front);
+            for (auto &component : components)
+            {
+                component->OnTransformed(tParam);
+            }
         }
 
     protected:
         std::vector<std::shared_ptr<Component>> components;
-
-        glm::mat4 model_matrix;
+        TransformParameter tParam;
     };
 
 } // namespace common
@@ -82,10 +135,14 @@ namespace builtin_components
                          std::shared_ptr<common::ModelMesh> mesh) : rd(rd),
                                                                     material(material),
                                                                     mesh(mesh), Component(object) {}
+        virtual void OnTransformed(common::TransformParameter &param)
+        {
+            material->UpdateM(param.model);
+        }
         virtual void OnStart()
         {
             render_id = rd->GetRenderID(renderer::OPAQUE);
-            material->UpdateM(object->GetTransformInfo());
+            material->UpdateM(object->GetTransformInfo().model);
             renderer::RenderQueueItem item(material, mesh, mesh->id_count);
             rd->InsertToQueue(render_id, item, renderer::OPAQUE);
         }
@@ -103,6 +160,42 @@ namespace builtin_components
         std::shared_ptr<common::Material> material;
         std::shared_ptr<common::ModelMesh> mesh;
         int render_id;
+    };
+
+    class Camera : public common::EventListener, public common::Component
+    {
+    public:
+        glm::mat4 view;
+        glm::mat4 projection;
+
+        Camera() {}
+        Camera(
+            std::shared_ptr<common::GameObject> object,
+            std::shared_ptr<renderer::Renderer> rd,
+            glm::mat4 projection) : rd(rd), projection(projection), Component(object)
+        {
+            auto tparam = object->GetTransformInfo();
+            view = glm::lookAt(tparam.pos, tparam.pos + tparam.front, tparam.up);
+            rd->UpdateVP(view, projection);
+            common::EventTransmitter::GetInstance()->SubscribeEvent(
+                common::EventType::EVENT_WINDOW_RESIZE,
+                std::static_pointer_cast<common::EventListener>(std::shared_ptr<Camera>(this)));
+        }
+
+        virtual void OnWindowResize(std::shared_ptr<common::ED_WindowResize> desc)
+        {
+            projection = glm::perspective(glm::radians(45.0f), desc->width * 1.0f / desc->height, 0.1f, 100.0f);
+            rd->UpdateVP(view, projection);
+        }
+
+        virtual void OnTransformed(common::TransformParameter &param)
+        {
+            view = glm::lookAt(param.pos, param.pos + param.front, param.up);
+            rd->UpdateVP(view, projection);
+        }
+
+    private:
+        std::shared_ptr<renderer::Renderer> rd;
     };
 }
 #endif

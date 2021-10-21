@@ -14,100 +14,6 @@
 
 namespace renderer
 {
-
-    class Camera : public common::EventListener
-    {
-    public:
-        //TODO: bind camera movement to a game object
-        float cameraSpeed;
-        float yaw;
-        float pitch;
-        glm::vec3 cameraPos;
-        glm::vec3 cameraFront;
-        glm::vec3 cameraUp;
-        glm::mat4 view;
-        glm::mat4 projection;
-
-        Camera() {}
-        Camera(
-            float speed,
-            glm::vec3 pos,
-            glm::vec3 up,
-            glm::mat4 projection) : cameraSpeed(speed), cameraPos(pos), cameraUp(up), projection(projection)
-        {
-            yaw = 270;
-            pitch = 0;
-            calcFront();
-            view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-
-            common::EventTransmitter::GetInstance()->SubscribeEvent(
-                common::EventType::EVENT_WINDOW_RESIZE,
-                std::static_pointer_cast<common::EventListener>(std::shared_ptr<Camera>(this)));
-
-            common::EventTransmitter::GetInstance()->SubscribeEvent(
-                common::EventType::EVENT_KEYBOARD_PRESS,
-                std::static_pointer_cast<common::EventListener>(std::shared_ptr<Camera>(this)));
-
-            common::EventTransmitter::GetInstance()->SubscribeEvent(
-                common::EventType::EVENT_MOUSE_MOVEMENT,
-                std::static_pointer_cast<common::EventListener>(std::shared_ptr<Camera>(this)));
-        }
-
-        virtual void OnWindowResize(std::shared_ptr<common::ED_WindowResize> desc)
-        {
-            projection = glm::perspective(glm::radians(45.0f), desc->width * 1.0f / desc->height, 0.1f, 100.0f);
-        }
-
-        virtual void OnKeyBoardPress(std::shared_ptr<common::ED_KeyboardPress> desc)
-        {
-            switch (desc->keycode)
-            {
-            case GLFW_KEY_W:
-                cameraPos += cameraSpeed * cameraFront;
-                break;
-            case GLFW_KEY_A:
-                cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-                break;
-            case GLFW_KEY_S:
-                cameraPos -= cameraSpeed * cameraFront;
-                break;
-            case GLFW_KEY_D:
-                cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-                break;
-            }
-            view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-        }
-
-        virtual void OnMouseMove(std::shared_ptr<common::ED_MouseMovement> desc)
-        {
-            float sensitivity = 0.05;
-            float xoffset = desc->dx;
-            float yoffset = desc->dy;
-            xoffset *= sensitivity;
-            yoffset *= sensitivity;
-
-            yaw += xoffset;
-            pitch += yoffset;
-
-            if (pitch > 89.0f)
-                pitch = 89.0f;
-            if (pitch < -89.0f)
-                pitch = -89.0f;
-            calcFront();
-            view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-        }
-
-    private:
-        void calcFront()
-        {
-            glm::vec3 front;
-            front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-            front.y = sin(glm::radians(pitch));
-            front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-            cameraFront = glm::normalize(front);
-        }
-    };
-
     enum RenderMode
     {
         OPAQUE,
@@ -163,7 +69,8 @@ namespace renderer
     {
     public:
         Renderer() {}
-        Renderer(std::shared_ptr<Camera> main_camera) : main_camera(main_camera)
+        Renderer(glm::mat4 view,
+                 glm::mat4 projection) : view(view), projection(projection)
         {
             glEnable(GL_DEPTH_TEST);
         }
@@ -171,13 +78,20 @@ namespace renderer
         render_id GetRenderID(RenderMode mode);
         void InsertToQueue(render_id id, RenderQueueItem item, RenderMode mode);
         void RemoveFromQueue(render_id id, RenderMode mode);
+        void UpdateVP(glm::mat4 view,
+                      glm::mat4 projection)
+        {
+            this->view = view;
+            this->projection = projection;
+        }
 
     private:
         RenderQueue opaque_queue;
         RenderQueue transparent_queue;
         RenderQueue opaque_shadow_queue;
         RenderQueue transparent_shadow_queue;
-        std::shared_ptr<Camera> main_camera;
+        glm::mat4 view;
+        glm::mat4 projection;
     };
 }
 
