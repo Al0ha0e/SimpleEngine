@@ -197,5 +197,64 @@ namespace builtin_components
     private:
         std::shared_ptr<renderer::Renderer> rd;
     };
+
+    class Light : public common::Component
+    {
+    public:
+        Light() {}
+        Light(
+            std::shared_ptr<common::GameObject> object,
+            float intensity,
+            glm::vec3 color,
+            bool cast_shadow) : intensity(intensity), color(color), cast_shadow(cast_shadow), Component(object) {}
+
+    private:
+        float intensity;
+        glm::vec3 color;
+        bool cast_shadow;
+    };
+
+    class SpotLight : public Light
+    {
+        //position: vec3(in transform) | intensity: float | color: vec3 | range: float | spot angle: float | direction: vec3(in transform)
+    public:
+        SpotLight() {}
+        SpotLight(std::shared_ptr<common::GameObject> object,
+                  float intensity,
+                  glm::vec3 color,
+                  float range,
+                  float spot_angle,
+                  bool cast_shadow) : range(range), spot_angle(spot_angle), Light(object, intensity, color, cast_shadow) {}
+
+    private:
+        float range;
+        float spot_angle;
+    };
+
+    class PointLight : public Light
+    {
+        //position(in transform) | intensity | color | range |
+    public:
+        PointLight() {}
+        PointLight(std::shared_ptr<common::GameObject> object,
+                   float intensity,
+                   glm::vec3 color,
+                   float range,
+                   bool cast_shadow) : range(range), Light(object, intensity, color, cast_shadow) {}
+
+    private:
+        float range;
+    };
+
+    class DirectionalLight : public Light
+    {
+        //position(in transform) | intensity | color | direction(in transform)
+    public:
+        DirectionalLight() {}
+        DirectionalLight(std::shared_ptr<common::GameObject> object,
+                         float intensity,
+                         glm::vec3 color,
+                         bool cast_shadow) : Light(object, intensity, color, cast_shadow) {}
+    };
 }
 #endif

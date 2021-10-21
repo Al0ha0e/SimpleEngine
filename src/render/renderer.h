@@ -47,12 +47,51 @@ namespace renderer
 
     struct RenderQueue
     {
-        std::map<unsigned int, RenderQueueItem> queue;
+        std::map<render_id, RenderQueueItem> queue;
         render_id maxid;
 
         render_id GetRenderID() { return ++maxid; }
 
         void InsertItem(render_id id, RenderQueueItem item)
+        {
+            queue[id] = item;
+        }
+
+        void RemoveItem(render_id id)
+        {
+            if (queue.find(id) == queue.end())
+                return;
+            queue.erase(queue.find(id));
+        }
+    };
+
+    typedef unsigned long long light_id;
+
+    enum LightType
+    {
+        POINT_LIGHT,
+        SPOT_LIGHT,
+        DIRECTIONAL_LIGHT
+    };
+
+    struct LightParameters
+    {
+        LightType tp;
+        glm::vec3 position;
+        glm::vec3 color;
+        glm::vec3 direction;
+        glm::vec3 misc; //x: intensity y: range z: spot angle
+    };
+
+    //TODO Use generic to reduce it
+    struct LightQueue
+    {
+        std::map<light_id, LightParameters> queue;
+        light_id maxid;
+
+        light_id GetLightID() { return ++maxid; }
+
+        void InsertItem(render_id id, LightParameters item)
         {
             queue[id] = item;
         }
@@ -78,6 +117,11 @@ namespace renderer
         render_id GetRenderID(RenderMode mode);
         void InsertToQueue(render_id id, RenderQueueItem item, RenderMode mode);
         void RemoveFromQueue(render_id id, RenderMode mode);
+
+        light_id GetLightID(bool cast_shadow);
+        void InsertToLightQueue(light_id id, LightParameters item, bool cast_shadow);
+        void RemoveFromLightQueue(light_id id, bool cast_shadow);
+
         void UpdateVP(glm::mat4 view,
                       glm::mat4 projection)
         {
@@ -90,6 +134,8 @@ namespace renderer
         RenderQueue transparent_queue;
         RenderQueue opaque_shadow_queue;
         RenderQueue transparent_shadow_queue;
+        LightQueue cast_queue;
+        LightQueue non_cast_queue;
         glm::mat4 view;
         glm::mat4 projection;
     };

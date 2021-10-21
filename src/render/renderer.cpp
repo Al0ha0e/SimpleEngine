@@ -72,4 +72,34 @@ namespace renderer
             break;
         }
     }
+
+    light_id Renderer::GetLightID(bool cast_shadow)
+    {
+        if (cast_shadow)
+            return cast_queue.GetLightID();
+        return non_cast_queue.GetLightID();
+    }
+    void Renderer::InsertToLightQueue(light_id id, LightParameters item, bool cast_shadow)
+    {
+        if (cast_shadow)
+        {
+            cast_queue.InsertItem(id, item);
+        }
+        else
+        {
+            non_cast_queue.InsertItem(id, item);
+        }
+    }
+    void Renderer::RemoveFromLightQueue(light_id id, bool cast_shadow)
+    {
+        if (cast_shadow)
+        {
+            cast_queue.RemoveItem(id);
+        }
+        else
+        {
+            non_cast_queue.RemoveItem(id);
+        }
+    }
+
 }
