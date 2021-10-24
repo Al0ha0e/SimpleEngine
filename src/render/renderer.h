@@ -30,8 +30,8 @@ namespace renderer
 
         virtual void Draw(glm::mat4 view, glm::mat4 projection)
         {
-            material->UpdateV(view);
-            material->UpdateP(projection);
+            // material->UpdateV(view);
+            // material->UpdateP(projection);
             material->PrepareForDraw();
             mesh->PrepareForDraw();
             glDrawElements(GL_TRIANGLES, vertex_cnt, GL_UNSIGNED_INT, 0);
@@ -77,10 +77,9 @@ namespace renderer
     struct LightParameters
     {
         LightType tp;
-        glm::vec3 position;
-        glm::vec3 color;
-        glm::vec3 direction;
-        glm::vec3 misc; //x: intensity y: range z: spot angle
+        glm::vec4 position;  //w: intensity
+        glm::vec4 color;     //w: range
+        glm::vec4 direction; //w: spot angle
     };
 
     //TODO Use generic to reduce it
@@ -112,6 +111,14 @@ namespace renderer
                  glm::mat4 projection) : view(view), projection(projection)
         {
             glEnable(GL_DEPTH_TEST);
+            glEnable(GL_CULL_FACE);
+            glGenBuffers(1, &ubo_VP);
+            glBindBuffer(GL_UNIFORM_BUFFER, ubo_VP);
+            glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_DYNAMIC_DRAW);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_VP);
+            glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(view));
+            glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
         }
         void Render();
         render_id GetRenderID(RenderMode mode);
@@ -138,6 +145,7 @@ namespace renderer
         LightQueue non_cast_queue;
         glm::mat4 view;
         glm::mat4 projection;
+        unsigned int ubo_VP;
     };
 }
 

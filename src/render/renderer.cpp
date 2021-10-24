@@ -5,7 +5,10 @@ namespace renderer
     {
         glClearColor(0.0f, 0.3f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+        glBindBuffer(GL_UNIFORM_BUFFER, ubo_VP);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(view));
+        glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
         for (auto &item : opaque_queue.queue)
         {
             item.second.Draw(view, projection);
