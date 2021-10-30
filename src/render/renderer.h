@@ -7,6 +7,7 @@
 
 #include "../common/common.h"
 #include "../events/event.h"
+#include "light.h"
 
 #include <vector>
 #include <list>
@@ -53,44 +54,6 @@ namespace renderer
         render_id GetRenderID() { return ++maxid; }
 
         void InsertItem(render_id id, RenderQueueItem item)
-        {
-            queue[id] = item;
-        }
-
-        void RemoveItem(render_id id)
-        {
-            if (queue.find(id) == queue.end())
-                return;
-            queue.erase(queue.find(id));
-        }
-    };
-
-    typedef unsigned long long light_id;
-
-    enum LightType
-    {
-        POINT_LIGHT,
-        SPOT_LIGHT,
-        DIRECTIONAL_LIGHT
-    };
-
-    struct LightParameters
-    {
-        LightType tp;
-        glm::vec4 position;  //w: intensity
-        glm::vec4 color;     //w: range
-        glm::vec4 direction; //w: spot angle
-    };
-
-    //TODO Use generic to reduce it
-    struct LightQueue
-    {
-        std::map<light_id, LightParameters> queue;
-        light_id maxid;
-
-        light_id GetLightID() { return ++maxid; }
-
-        void InsertItem(render_id id, LightParameters item)
         {
             queue[id] = item;
         }
