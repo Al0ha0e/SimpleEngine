@@ -121,20 +121,22 @@ int main()
     auto cam = std::make_shared<builtin_components::Camera>(camObject, rder, projection);
     camObject->AddComponent(cam);
 
-    auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./assets/shaders/v.txt", common::VERTEX_SHADER),
-                                                          common::Shader("./assets/shaders/f.txt", common::FRAGMENT_SHADER));
+    auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./assets/shaders/fwd_v.txt", common::VERTEX_SHADER),
+                                                          common::Shader("./assets/shaders/fwd_f.txt", common::FRAGMENT_SHADER));
 
     auto texture = std::make_shared<common::Texture>("./assets/textures/container.jpg");
 
     auto mesh = std::make_shared<common::ModelMesh>("./assets/models/test.txt");
 
-    auto mat_args = std::make_shared<common::RenderArguments>(model, view, projection);
+    auto mat_args = std::make_shared<common::RenderArguments>(model);
 
-    auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, texture, mat_args);
+    unsigned int id = rder->GetMaterialID(renderer::OPAQUE);
+    auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, id, texture);
+    rder->RegisterMaterial(id, material, renderer::OPAQUE);
 
     auto object = std::make_shared<common::GameObject>(tp);
 
-    auto render_component = std::make_shared<builtin_components::RenderableObject>(object, rder, material, mesh);
+    auto render_component = std::make_shared<builtin_components::RenderableObject>(object, rder, material, mesh, mat_args);
 
     object->AddComponent(render_component);
 

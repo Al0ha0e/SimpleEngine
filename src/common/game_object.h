@@ -132,18 +132,19 @@ namespace builtin_components
         RenderableObject(std::shared_ptr<common::GameObject> object,
                          std::shared_ptr<renderer::Renderer> rd,
                          std::shared_ptr<common::Material> material,
-                         std::shared_ptr<common::ModelMesh> mesh) : rd(rd),
-                                                                    material(material),
-                                                                    mesh(mesh), Component(object) {}
+                         std::shared_ptr<common::ModelMesh> mesh,
+                         std::shared_ptr<common::RenderArguments> args) : rd(rd),
+                                                                          material(material),
+                                                                          mesh(mesh), args(args), Component(object) {}
         virtual void OnTransformed(common::TransformParameter &param)
         {
-            material->UpdateM(param.model);
+            args->model = param.model;
         }
+
         virtual void OnStart()
         {
             render_id = rd->GetRenderID(renderer::OPAQUE);
-            material->UpdateM(object->GetTransformInfo().model);
-            renderer::RenderQueueItem item(material, mesh, mesh->id_count);
+            renderer::RenderQueueItem item(material, mesh, args, mesh->id_count);
             rd->InsertToQueue(render_id, item, renderer::OPAQUE);
         }
         virtual void Dispose()
@@ -159,6 +160,7 @@ namespace builtin_components
         std::shared_ptr<renderer::Renderer> rd;
         std::shared_ptr<common::Material> material;
         std::shared_ptr<common::ModelMesh> mesh;
+        std::shared_ptr<common::RenderArguments> args;
         int render_id;
     };
 

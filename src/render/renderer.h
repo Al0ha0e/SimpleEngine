@@ -12,6 +12,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <set>
 
 namespace renderer
 {
@@ -27,21 +28,21 @@ namespace renderer
     {
         std::shared_ptr<common::Material> material;
         std::shared_ptr<common::ModelMesh> mesh;
+        std::shared_ptr<common::RenderArguments> args;
         unsigned int vertex_cnt;
 
-        virtual void Draw(glm::mat4 view, glm::mat4 projection)
+        virtual void Draw(unsigned int shader_id)
         {
-            // material->UpdateV(view);
-            // material->UpdateP(projection);
-            material->PrepareForDraw();
             mesh->PrepareForDraw();
+            args->PrepareForDraw(shader_id);
             glDrawElements(GL_TRIANGLES, vertex_cnt, GL_UNSIGNED_INT, 0);
         }
 
         RenderQueueItem() {}
         RenderQueueItem(std::shared_ptr<common::Material> material,
                         std::shared_ptr<common::ModelMesh> mesh,
-                        unsigned int vertex_cnt) : material(material), mesh(mesh), vertex_cnt(vertex_cnt) {}
+                        std::shared_ptr<common::RenderArguments> args,
+                        unsigned int vertex_cnt) : material(material), mesh(mesh), args(args), vertex_cnt(vertex_cnt) {}
     };
 
     typedef unsigned long long render_id;
@@ -49,20 +50,47 @@ namespace renderer
     struct RenderQueue
     {
         std::map<render_id, RenderQueueItem> queue;
+        std::map<render_id, std::shared_ptr<common::Material>> materials;
+        std::map<render_id, std::set<render_id>> mat2obj;
         render_id maxid;
+        render_id max_material_id;
 
         render_id GetRenderID() { return ++maxid; }
+        render_id GetMaterialID() { return ++max_material_id; }
+
+        void RegisterMaterial(render_id id, std::shared_ptr<common::Material> material)
+        {
+            materials.insert(std::pair<render_id, std::shared_ptr<common::Material>>(id, material));
+            mat2obj.insert(std::pair<render_id, std::set<render_id>>(id, std::set<render_id>()));
+        }
 
         void InsertItem(render_id id, RenderQueueItem item)
         {
             queue[id] = item;
+            mat2obj[item.material->material_id].insert(id);
         }
 
         void RemoveItem(render_id id)
         {
-            if (queue.find(id) == queue.end())
+            auto it = queue.find(id);
+            if (it == queue.end())
                 return;
-            queue.erase(queue.find(id));
+            mat2obj[it->second.material->material_id].erase(id);
+            queue.erase(it);
+        }
+
+        void Draw()
+        {
+            for (auto &material : materials)
+            {
+                auto &objs = mat2obj[material.first];
+                if (objs.size())
+                {
+                    material.second->PrepareForDraw();
+                    for (auto &obj_id : objs)
+                        queue[obj_id].Draw(material.second->shader->shader);
+                }
+            }
         }
     };
 
@@ -85,12 +113,10 @@ namespace renderer
         }
         void Render();
         render_id GetRenderID(RenderMode mode);
+        render_id GetMaterialID(RenderMode mode);
+        void RegisterMaterial(render_id id, std::shared_ptr<common::Material> material, RenderMode mode);
         void InsertToQueue(render_id id, RenderQueueItem item, RenderMode mode);
         void RemoveFromQueue(render_id id, RenderMode mode);
-
-        light_id GetLightID(bool cast_shadow);
-        void InsertToLightQueue(light_id id, LightParameters item, bool cast_shadow);
-        void RemoveFromLightQueue(light_id id, bool cast_shadow);
 
         void UpdateVP(glm::mat4 view,
                       glm::mat4 projection)
@@ -104,8 +130,6 @@ namespace renderer
         RenderQueue transparent_queue;
         RenderQueue opaque_shadow_queue;
         RenderQueue transparent_shadow_queue;
-        LightQueue cast_queue;
-        LightQueue non_cast_queue;
         glm::mat4 view;
         glm::mat4 projection;
         unsigned int ubo_VP;

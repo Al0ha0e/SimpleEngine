@@ -126,54 +126,22 @@ namespace common
 
     struct RenderArguments
     {
-
         RenderArguments() {}
-        RenderArguments(glm::mat4 model,
-                        glm::mat4 view,
-                        glm::mat4 projection) : model(model), view(view), projection(projection) {}
+        RenderArguments(glm::mat4 model) : model(model) {}
 
         glm::mat4 model;
-        glm::mat4 view;
-        glm::mat4 projection;
+
+        virtual void PrepareForDraw(unsigned int shader_id)
+        {
+            unsigned int modelLoc = glGetUniformLocation(shader_id, "model");
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        }
     };
 
     struct Material
     {
         Material() {}
-        Material(std::shared_ptr<ShaderProgram> shader,
-                 std::shared_ptr<RenderArguments> args) : shader(shader), args(args)
-        {
-            //TODO call methods in Shader class to set these matrices
-            glUseProgram(shader->shader);
-            unsigned int id = shader->shader;
-            modelLoc = glGetUniformLocation(id, "model");
-            viewLoc = glGetUniformLocation(id, "view");
-            projectionLoc = glGetUniformLocation(id, "projection");
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(args->model));
-            glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(args->view));
-            glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(args->projection));
-        }
-
-        void UpdateM(glm::mat4 model)
-        {
-            glUseProgram(shader->shader);
-            args->model = model;
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        }
-
-        void UpdateV(glm::mat4 view)
-        {
-            glUseProgram(shader->shader);
-            args->view = view;
-            glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        }
-
-        void UpdateP(glm::mat4 projection)
-        {
-            glUseProgram(shader->shader);
-            args->projection = projection;
-            glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-        }
+        Material(std::shared_ptr<ShaderProgram> shader, unsigned int material_id) : shader(shader), material_id(material_id) {}
 
         virtual void PrepareForDraw()
         {
@@ -183,8 +151,7 @@ namespace common
         virtual void Dispose() {}
 
         std::shared_ptr<ShaderProgram> shader;
-        std::shared_ptr<RenderArguments> args;
-        int modelLoc, viewLoc, projectionLoc;
+        unsigned int material_id;
     };
 
     //TODO layout description
@@ -228,11 +195,14 @@ namespace common
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
             glEnableVertexAttribArray(0);
 
-            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
+
+            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+            glEnableVertexAttribArray(2);
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);

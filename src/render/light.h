@@ -110,10 +110,11 @@ namespace renderer
         void RemoveItem(light_id id)
         {
             auto &param = lights.find(id)->second;
+            unsigned int idx;
             switch (param->tp)
             {
             case POINT_LIGHT:
-                unsigned int idx = inv_point_id[pointlight_cnt - 1];
+                idx = inv_point_id[pointlight_cnt - 1];
                 inv_point_id.erase(pointlight_cnt - 1);
                 inv_point_id[param->index] = idx;
                 lights[idx]->index = param->index;
@@ -123,7 +124,7 @@ namespace renderer
                 pointlight_cnt--;
                 break;
             case SPOT_LIGHT:
-                unsigned int idx = inv_spot_id.find(spotlight_cnt - 1)->second;
+                idx = inv_spot_id.find(spotlight_cnt - 1)->second;
                 inv_spot_id.erase(spotlight_cnt - 1);
                 inv_spot_id[param->index] = idx;
                 lights[idx]->index = param->index;
@@ -133,7 +134,7 @@ namespace renderer
                 spotlight_cnt--;
                 break;
             case DIRECTIONAL_LIGHT:
-                unsigned int idx = inv_directional_id.find(directional_cnt - 1)->second;
+                idx = inv_directional_id.find(directional_cnt - 1)->second;
                 inv_directional_id.erase(directional_cnt - 1);
                 inv_directional_id[param->index] = idx;
                 lights[idx]->index = param->index;
@@ -164,27 +165,6 @@ namespace renderer
             glBufferSubData(GL_UNIFORM_BUFFER, offset, sizeof(glm::vec4), glm::value_ptr(param.position));
             glBufferSubData(GL_UNIFORM_BUFFER, offset + sizeof(glm::vec4), sizeof(glm::vec4), glm::value_ptr(param.color));
             glBufferSubData(GL_UNIFORM_BUFFER, offset + 2 * sizeof(glm::vec4), sizeof(glm::vec4), glm::value_ptr(param.direction));
-        }
-    };
-
-    //TODO Use generic to reduce it
-    struct LightQueue
-    {
-        std::map<light_id, LightParameters> queue;
-        light_id maxid;
-
-        light_id GetLightID() { return ++maxid; }
-
-        void InsertItem(light_id id, LightParameters item)
-        {
-            queue[id] = item;
-        }
-
-        void RemoveItem(light_id id)
-        {
-            if (queue.find(id) == queue.end())
-                return;
-            queue.erase(queue.find(id));
         }
     };
 } // namespace renderer

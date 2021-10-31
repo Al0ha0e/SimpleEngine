@@ -9,11 +9,7 @@ namespace renderer
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(view));
         glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
-        for (auto &item : opaque_queue.queue)
-        {
-            item.second.Draw(view, projection);
-        }
-
+        opaque_queue.Draw();
         glBindVertexArray(0);
     }
 
@@ -31,6 +27,44 @@ namespace renderer
             return transparent_shadow_queue.GetRenderID();
         default:
             return 0;
+        }
+    }
+
+    render_id Renderer::GetMaterialID(RenderMode mode)
+    {
+        switch (mode)
+        {
+        case OPAQUE:
+            return opaque_queue.GetMaterialID();
+        case OPAQUE_SHADOW:
+            return opaque_shadow_queue.GetMaterialID();
+        case TRANSPARENT:
+            return transparent_queue.GetMaterialID();
+        case TRANSPARENT_SHADOW:
+            return transparent_shadow_queue.GetMaterialID();
+        default:
+            return 0;
+        }
+    }
+
+    void Renderer::RegisterMaterial(render_id id, std::shared_ptr<common::Material> material, RenderMode mode)
+    {
+        switch (mode)
+        {
+        case OPAQUE:
+            opaque_queue.RegisterMaterial(id, material);
+            break;
+        case OPAQUE_SHADOW:
+            opaque_shadow_queue.RegisterMaterial(id, material);
+            break;
+        case TRANSPARENT:
+            transparent_queue.RegisterMaterial(id, material);
+            break;
+        case TRANSPARENT_SHADOW:
+            transparent_shadow_queue.RegisterMaterial(id, material);
+            break;
+        default:
+            break;
         }
     }
 
@@ -75,34 +109,4 @@ namespace renderer
             break;
         }
     }
-
-    light_id Renderer::GetLightID(bool cast_shadow)
-    {
-        if (cast_shadow)
-            return cast_queue.GetLightID();
-        return non_cast_queue.GetLightID();
-    }
-    void Renderer::InsertToLightQueue(light_id id, LightParameters item, bool cast_shadow)
-    {
-        if (cast_shadow)
-        {
-            cast_queue.InsertItem(id, item);
-        }
-        else
-        {
-            non_cast_queue.InsertItem(id, item);
-        }
-    }
-    void Renderer::RemoveFromLightQueue(light_id id, bool cast_shadow)
-    {
-        if (cast_shadow)
-        {
-            cast_queue.RemoveItem(id);
-        }
-        else
-        {
-            non_cast_queue.RemoveItem(id);
-        }
-    }
-
 }
