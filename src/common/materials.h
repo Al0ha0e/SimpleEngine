@@ -35,22 +35,21 @@ namespace builtin_materials
         std::shared_ptr<common::Texture> texture;
     };
 
-    struct PhongRenderArguments : public common::RenderArguments
-    {
-        glm::vec3 ambient;
-        glm::vec3 viewPos;
-        float shininess;
-    };
-
     struct PhongMaterial : public common::Material
     {
         PhongMaterial() {}
         PhongMaterial(std::shared_ptr<common::ShaderProgram> shader,
                       unsigned int material_id,
                       std::shared_ptr<common::Texture> diffuse,
-                      std::shared_ptr<common::Texture> specular)
-            : diffuse(diffuse), specular(specular), Material(shader, material_id)
+                      std::shared_ptr<common::Texture> specular,
+                      float shininess)
+            : diffuse(diffuse), specular(specular), shininess(shininess), Material(shader, material_id)
         {
+            glUseProgram(shader->shader);
+            unsigned int shineLoc = glGetUniformLocation(shader->shader, "shininess");
+            glUniform1f(shineLoc, shininess);
+            glUniform1i(glGetUniformLocation(shader->shader, "diffuse"), 0);
+            glUniform1i(glGetUniformLocation(shader->shader, "specular"), 1);
         }
 
         virtual void PrepareForDraw()
@@ -73,6 +72,7 @@ namespace builtin_materials
 
         std::shared_ptr<common::Texture> diffuse;
         std::shared_ptr<common::Texture> specular;
+        float shininess;
     };
 }
 #endif

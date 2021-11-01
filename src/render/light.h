@@ -31,6 +31,12 @@ namespace renderer
         glm::vec4 position;  //w: intensity
         glm::vec4 color;     //w: range
         glm::vec4 direction; //w: spot angle
+
+        InnerLightParameters() {}
+        InnerLightParameters(glm::vec4 position,
+                             glm::vec4 color,
+                             glm::vec4 direction)
+            : position(position), color(color), direction(direction) {}
     };
 
     struct LightParameters
@@ -39,29 +45,35 @@ namespace renderer
         LightType tp;
         bool cast_shadow;
         InnerLightParameters inner_params;
+
+        LightParameters() {}
+        LightParameters(LightType tp,
+                        bool cast_shadow,
+                        InnerLightParameters inner_params)
+            : tp(tp), cast_shadow(cast_shadow), inner_params(inner_params) {}
     };
 
     class LightManager
     {
     public:
-        LightManager()
+        LightManager() : pointlight_cnt(0), spotlight_cnt(0), directional_cnt(0), maxid(0)
         {
             glGenBuffers(1, &ubo_pointlights);
             glBindBuffer(GL_UNIFORM_BUFFER, ubo_pointlights);
             glBufferData(GL_UNIFORM_BUFFER, max_point_light * 3 * sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
-            glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_pointlights);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_pointlights);
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
             glGenBuffers(1, &ubo_spotlights);
             glBindBuffer(GL_UNIFORM_BUFFER, ubo_spotlights);
             glBufferData(GL_UNIFORM_BUFFER, max_spot_light * 3 * sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
-            glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_spotlights);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 3, ubo_spotlights);
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
             glGenBuffers(1, &ubo_directionals);
             glBindBuffer(GL_UNIFORM_BUFFER, ubo_directionals);
             glBufferData(GL_UNIFORM_BUFFER, max_directional_light * 3 * sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
-            glBindBufferBase(GL_UNIFORM_BUFFER, 3, ubo_directionals);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 4, ubo_directionals);
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
         }
 
@@ -162,6 +174,7 @@ namespace renderer
 
         inline void send_lightdata(unsigned int offset, InnerLightParameters &param)
         {
+            std::cout << "OFFSET " << offset << std::endl;
             glBufferSubData(GL_UNIFORM_BUFFER, offset, sizeof(glm::vec4), glm::value_ptr(param.position));
             glBufferSubData(GL_UNIFORM_BUFFER, offset + sizeof(glm::vec4), sizeof(glm::vec4), glm::value_ptr(param.color));
             glBufferSubData(GL_UNIFORM_BUFFER, offset + 2 * sizeof(glm::vec4), sizeof(glm::vec4), glm::value_ptr(param.direction));

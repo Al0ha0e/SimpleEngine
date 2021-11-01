@@ -5,9 +5,8 @@ namespace renderer
     {
         glClearColor(0.0f, 0.3f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glBindBuffer(GL_UNIFORM_BUFFER, ubo_VP);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(view));
-        glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));
+        glBindBuffer(GL_UNIFORM_BUFFER, ubo_GI);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::vec4), glm::value_ptr(ambient));
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
         opaque_queue.Draw();
         glBindVertexArray(0);
@@ -108,5 +107,15 @@ namespace renderer
         default:
             break;
         }
+    }
+
+    light_id Renderer::InsertLight(std::shared_ptr<LightParameters> light)
+    {
+        return light_manager.InsertItem(light);
+    }
+
+    void Renderer::RemoveLight(light_id id)
+    {
+        light_manager.RemoveItem(id);
     }
 }

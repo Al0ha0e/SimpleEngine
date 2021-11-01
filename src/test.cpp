@@ -10,8 +10,8 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void processInput(GLFWwindow *window);
 
 // settings
-const unsigned int SCR_WIDTH = 1024;
-const unsigned int SCR_HEIGHT = 768;
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
 
 class TestController : public common::EventListener
 {
@@ -70,8 +70,8 @@ int main()
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 #ifdef __APPLE__
@@ -80,7 +80,7 @@ int main()
 
     // glfw window creation
     // --------------------
-    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SimpleEngine", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SimpleEngine", glfwGetPrimaryMonitor(), NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -88,6 +88,7 @@ int main()
         return -1;
     }
     glfwMakeContextCurrent(window);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
 
@@ -100,7 +101,7 @@ int main()
     }
 
     glm::mat4 model(1.0f);
-    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.5f, 0.0f));
+    //model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.5f, 0.0f));
 
     glm::mat4 camModel;
     glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
@@ -116,22 +117,35 @@ int main()
 
     float camSpeed = 0.01;
 
-    auto rder = std::make_shared<renderer::Renderer>(view, projection);
+    auto rder = std::make_shared<renderer::Renderer>(
+        view,
+        projection,
+        glm::vec4(cameraPos.x, cameraPos.y, cameraPos.z, 0.0f),
+        glm::vec4(0.1f, 0.1f, 0.1f, 0.0f));
+
+    glm::vec4 lightpos(0.0f, 0.0f, 3.0f, 0.9f);
+    glm::vec4 lightcolor(1.0f, 1.0f, 1.0f, 0.0f);
+    glm::vec4 lightdirection;
+    auto inner_lp = renderer::InnerLightParameters(lightpos, lightcolor, lightdirection);
+    auto light_prop = std::make_shared<renderer::LightParameters>(renderer::POINT_LIGHT, false, inner_lp);
+    rder->InsertLight(light_prop);
 
     auto cam = std::make_shared<builtin_components::Camera>(camObject, rder, projection);
     camObject->AddComponent(cam);
 
-    auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./assets/shaders/fwd_v.txt", common::VERTEX_SHADER),
-                                                          common::Shader("./assets/shaders/fwd_f.txt", common::FRAGMENT_SHADER));
+    auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/fwd_v.txt", common::VERTEX_SHADER),
+                                                          common::Shader("./src/shaders/fwd_f.txt", common::FRAGMENT_SHADER));
 
-    auto texture = std::make_shared<common::Texture>("./assets/textures/container.jpg");
+    auto diffuse = std::make_shared<common::Texture>("./assets/textures/diffuse.png");
+    auto specular = std::make_shared<common::Texture>("./assets/textures/specular.png");
 
     auto mesh = std::make_shared<common::ModelMesh>("./assets/models/test.txt");
 
     auto mat_args = std::make_shared<common::RenderArguments>(model);
 
     unsigned int id = rder->GetMaterialID(renderer::OPAQUE);
-    auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, id, texture);
+    auto material = std::make_shared<builtin_materials::PhongMaterial>(shader, id, diffuse, specular, 32.0f);
+    // auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, id, texture);
     rder->RegisterMaterial(id, material, renderer::OPAQUE);
 
     auto object = std::make_shared<common::GameObject>(tp);

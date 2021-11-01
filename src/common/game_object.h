@@ -178,7 +178,7 @@ namespace builtin_components
         {
             auto tparam = object->GetTransformInfo();
             view = glm::lookAt(tparam.pos, tparam.pos + tparam.front, tparam.up);
-            rd->UpdateVP(view, projection);
+            rd->UpdateVP(view, projection, tparam.pos);
             common::EventTransmitter::GetInstance()->SubscribeEvent(
                 common::EventType::EVENT_WINDOW_RESIZE,
                 std::static_pointer_cast<common::EventListener>(std::shared_ptr<Camera>(this)));
@@ -187,13 +187,13 @@ namespace builtin_components
         virtual void OnWindowResize(std::shared_ptr<common::ED_WindowResize> desc)
         {
             projection = glm::perspective(glm::radians(45.0f), desc->width * 1.0f / desc->height, 0.1f, 100.0f);
-            rd->UpdateVP(view, projection);
+            rd->UpdateVP(view, projection, object->GetTransformInfo().pos);
         }
 
         virtual void OnTransformed(common::TransformParameter &param)
         {
             view = glm::lookAt(param.pos, param.pos + param.front, param.up);
-            rd->UpdateVP(view, projection);
+            rd->UpdateVP(view, projection, object->GetTransformInfo().pos);
         }
 
     private:

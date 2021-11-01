@@ -99,16 +99,26 @@ namespace renderer
     public:
         Renderer() {}
         Renderer(glm::mat4 view,
-                 glm::mat4 projection) : view(view), projection(projection)
+                 glm::mat4 projection,
+                 glm::vec4 viewPos,
+                 glm::vec4 ambient) : view(view), projection(projection), viewPos(viewPos), ambient(ambient)
         {
             glEnable(GL_DEPTH_TEST);
             glEnable(GL_CULL_FACE);
             glGenBuffers(1, &ubo_VP);
             glBindBuffer(GL_UNIFORM_BUFFER, ubo_VP);
-            glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_DYNAMIC_DRAW);
+            glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4) + sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
             glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_VP);
             glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(view));
             glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));
+            glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, sizeof(glm::vec4), glm::value_ptr(viewPos));
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+            glGenBuffers(1, &ubo_GI);
+            glBindBuffer(GL_UNIFORM_BUFFER, ubo_GI);
+            glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_GI);
+            glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::vec4), glm::value_ptr(ambient));
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
         }
         void Render();
@@ -117,12 +127,21 @@ namespace renderer
         void RegisterMaterial(render_id id, std::shared_ptr<common::Material> material, RenderMode mode);
         void InsertToQueue(render_id id, RenderQueueItem item, RenderMode mode);
         void RemoveFromQueue(render_id id, RenderMode mode);
+        light_id InsertLight(std::shared_ptr<LightParameters> light);
+        void RemoveLight(light_id id);
 
         void UpdateVP(glm::mat4 view,
-                      glm::mat4 projection)
+                      glm::mat4 projection,
+                      glm::vec3 viewPos)
         {
             this->view = view;
             this->projection = projection;
+            this->viewPos = glm::vec4(viewPos.x, viewPos.y, viewPos.z, 0.0f);
+            glBindBuffer(GL_UNIFORM_BUFFER, ubo_VP);
+            glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(view));
+            glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));
+            glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, sizeof(glm::vec4), glm::value_ptr(this->viewPos));
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
         }
 
     private:
@@ -130,9 +149,13 @@ namespace renderer
         RenderQueue transparent_queue;
         RenderQueue opaque_shadow_queue;
         RenderQueue transparent_shadow_queue;
+        LightManager light_manager;
         glm::mat4 view;
         glm::mat4 projection;
+        glm::vec4 viewPos;
+        glm::vec4 ambient;
         unsigned int ubo_VP;
+        unsigned int ubo_GI;
     };
 }
 
