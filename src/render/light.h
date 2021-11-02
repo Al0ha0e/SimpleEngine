@@ -119,6 +119,29 @@ namespace renderer
             return ret;
         }
 
+        void UpdateItem(light_id id)
+        {
+            auto &param = lights[id];
+            switch (param->tp)
+            {
+            case POINT_LIGHT:
+                glBindBuffer(GL_UNIFORM_BUFFER, ubo_pointlights);
+                send_lightdata(pointlight_cnt * 3 * sizeof(glm::vec4), param->inner_params);
+                glBindBuffer(GL_UNIFORM_BUFFER, 0);
+                break;
+            case SPOT_LIGHT:
+                glBindBuffer(GL_UNIFORM_BUFFER, ubo_spotlights);
+                send_lightdata(spotlight_cnt * 3 * sizeof(glm::vec4), param->inner_params);
+                glBindBuffer(GL_UNIFORM_BUFFER, 0);
+                break;
+            case DIRECTIONAL_LIGHT:
+                glBindBuffer(GL_UNIFORM_BUFFER, ubo_directionals);
+                send_lightdata(directional_cnt * 3 * sizeof(glm::vec4), param->inner_params);
+                glBindBuffer(GL_UNIFORM_BUFFER, 0);
+                break;
+            }
+        }
+
         void RemoveItem(light_id id)
         {
             auto &param = lights.find(id)->second;

@@ -121,14 +121,19 @@ int main()
         view,
         projection,
         glm::vec4(cameraPos.x, cameraPos.y, cameraPos.z, 0.0f),
-        glm::vec4(0.1f, 0.1f, 0.1f, 0.0f));
+        glm::vec4(0.3f, 0.3f, 0.4f, 0.0f));
 
+    glm::mat4 lightModel;
     glm::vec4 lightpos(0.0f, 0.0f, 3.0f, 0.9f);
     glm::vec4 lightcolor(1.0f, 1.0f, 1.0f, 0.0f);
     glm::vec4 lightdirection;
+    common::TransformParameter tpLight(lightModel, glm::vec3(lightpos.x, lightpos.y, lightpos.z));
     auto inner_lp = renderer::InnerLightParameters(lightpos, lightcolor, lightdirection);
     auto light_prop = std::make_shared<renderer::LightParameters>(renderer::POINT_LIGHT, false, inner_lp);
-    rder->InsertLight(light_prop);
+    auto lightObject = std::make_shared<common::GameObject>(tpLight);
+    auto light = std::make_shared<builtin_components::Light>(lightObject, light_prop, rder);
+    lightObject->AddComponent(light);
+    lightObject->OnStart();
 
     auto cam = std::make_shared<builtin_components::Camera>(camObject, rder, projection);
     camObject->AddComponent(cam);

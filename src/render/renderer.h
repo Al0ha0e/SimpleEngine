@@ -127,8 +127,18 @@ namespace renderer
         void RegisterMaterial(render_id id, std::shared_ptr<common::Material> material, RenderMode mode);
         void InsertToQueue(render_id id, RenderQueueItem item, RenderMode mode);
         void RemoveFromQueue(render_id id, RenderMode mode);
-        light_id InsertLight(std::shared_ptr<LightParameters> light);
-        void RemoveLight(light_id id);
+        light_id InsertLight(std::shared_ptr<LightParameters> light)
+        {
+            return light_manager.InsertItem(light);
+        }
+        void UpdateLight(light_id id)
+        {
+            light_manager.UpdateItem(id);
+        }
+        void RemoveLight(light_id id)
+        {
+            light_manager.RemoveItem(id);
+        }
 
         void UpdateVP(glm::mat4 view,
                       glm::mat4 projection,

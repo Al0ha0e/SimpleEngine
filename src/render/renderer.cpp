@@ -108,14 +108,4 @@ namespace renderer
             break;
         }
     }
-
-    light_id Renderer::InsertLight(std::shared_ptr<LightParameters> light)
-    {
-        return light_manager.InsertItem(light);
-    }
-
-    void Renderer::RemoveLight(light_id id)
-    {
-        light_manager.RemoveItem(id);
-    }
 }

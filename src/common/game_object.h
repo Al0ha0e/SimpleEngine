@@ -149,6 +149,7 @@ namespace builtin_components
         }
         virtual void Dispose()
         {
+            rd->RemoveFromQueue(render_id, renderer::OPAQUE);
             if (mesh != nullptr)
                 mesh->Dispose();
             if (material != nullptr)
@@ -204,59 +205,40 @@ namespace builtin_components
     {
     public:
         Light() {}
+        //TODO calc light pos, direction from transform
         Light(
             std::shared_ptr<common::GameObject> object,
-            float intensity,
-            glm::vec3 color,
-            bool cast_shadow) : intensity(intensity), color(color), cast_shadow(cast_shadow), Component(object) {}
+            std::shared_ptr<renderer::LightParameters> light_param,
+            std::shared_ptr<renderer::Renderer> rd)
+            : light_param(light_param), rd(rd), Component(object)
+        {
+        }
+
+        virtual void OnStart()
+        {
+            lid = rd->InsertLight(light_param);
+        }
+
+        virtual void Dispose()
+        {
+            rd->RemoveLight(lid);
+        }
+
+        virtual void OnTransformed(common::TransformParameter &param)
+        {
+            light_param->inner_params.position = glm::vec4(
+                param.pos.x,
+                param.pos.y,
+                param.pos.z,
+                light_param->inner_params.position.w);
+            rd->UpdateLight(lid);
+            //TODO update direction
+        }
 
     private:
-        float intensity;
-        glm::vec3 color;
-        bool cast_shadow;
-    };
-
-    class SpotLight : public Light
-    {
-        //position: vec3(in transform) | intensity: float | color: vec3 | range: float | spot angle: float | direction: vec3(in transform)
-    public:
-        SpotLight() {}
-        SpotLight(std::shared_ptr<common::GameObject> object,
-                  float intensity,
-                  glm::vec3 color,
-                  float range,
-                  float spot_angle,
-                  bool cast_shadow) : range(range), spot_angle(spot_angle), Light(object, intensity, color, cast_shadow) {}
-
-    private:
-        float range;
-        float spot_angle;
-    };
-
-    class PointLight : public Light
-    {
-        //position(in transform) | intensity | color | range |
-    public:
-        PointLight() {}
-        PointLight(std::shared_ptr<common::GameObject> object,
-                   float intensity,
-                   glm::vec3 color,
-                   float range,
-                   bool cast_shadow) : range(range), Light(object, intensity, color, cast_shadow) {}
-
-    private:
-        float range;
-    };
-
-    class DirectionalLight : public Light
-    {
-        //position(in transform) | intensity | color | direction(in transform)
-    public:
-        DirectionalLight() {}
-        DirectionalLight(std::shared_ptr<common::GameObject> object,
-                         float intensity,
-                         glm::vec3 color,
-                         bool cast_shadow) : Light(object, intensity, color, cast_shadow) {}
+        renderer::light_id lid;
+        std::shared_ptr<renderer::LightParameters> light_param;
+        std::shared_ptr<renderer::Renderer> rd;
     };
 }
 #endif
