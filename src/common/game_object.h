@@ -10,27 +10,18 @@ namespace common
     struct TransformParameter
     {
         glm::mat4 model;
+        glm::mat4 translation;
+        glm::mat4 rotation;
         glm::vec3 pos;
-        glm::vec3 front;
-        glm::vec3 up;
-        float yaw;
-        float pitch;
 
         TransformParameter() {}
-        TransformParameter(glm::mat4 model, glm::vec3 pos) : model(model), pos(pos)
+        TransformParameter(glm::vec3 pos, glm::vec3 dir) : pos(pos)
         {
-            up = glm::vec3(0.0f, 1.0f, 0.0f);
-            yaw = 270;
-            pitch = 0;
-            CalcFront();
-        }
-
-        void CalcFront()
-        {
-            front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-            front.y = sin(glm::radians(pitch));
-            front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-            front = glm::normalize(front);
+            rotation = glm::rotate(glm::mat4(1.0f), dir.x, glm::vec3(1.0f, 0.0f, 0.0f));
+            rotation = glm::rotate(rotation, dir.y, glm::vec3(0.0f, 1.0f, 0.0f));
+            rotation = glm::rotate(rotation, dir.z, glm::vec3(0.0f, 0.0f, 1.0f));
+            translation = glm::translate(glm::mat4(1.0f), pos);
+            model = translation * rotation;
         }
     };
 
@@ -58,7 +49,7 @@ namespace common
     public:
         GameObject() {}
 
-        GameObject(TransformParameter tparam) : tParam(tparam) {}
+        GameObject(std::shared_ptr<TransformParameter> tparam) : tParam(tparam) {}
 
         void AddComponent(std::shared_ptr<Component> component)
         {
@@ -83,42 +74,52 @@ namespace common
             }
         }
 
-        TransformParameter GetTransformInfo()
+        std::shared_ptr<TransformParameter> GetTransformInfo()
         {
             return tParam;
         }
 
-        void Rotate(float detYaw, float detPitch)
+        void RotateGlobal(float det, glm::vec3 &axis)
         {
-            //TODO model_matrix
-            tParam.yaw += detYaw;
-            tParam.pitch += detPitch;
-            if (tParam.pitch > 89.0f)
-                tParam.pitch = 89.0f;
-            if (tParam.pitch < -89.0f)
-                tParam.pitch = -89.0f;
-            tParam.CalcFront();
-            for (auto &component : components)
-            {
-                component->OnTransformed(tParam);
-            }
+            tParam->rotation = glm::rotate(tParam->rotation, det, axis);
+            UpdateTransform();
         }
 
-        void Transform(glm::vec3 det)
+        void RotateLocal(float det, glm::vec3 &axis)
         {
-            //TODO model_matrix
-            //TODO
-            tParam.pos += det.x * glm::normalize(glm::cross(tParam.front, tParam.up));
-            tParam.pos += det.y * glm::normalize(tParam.front);
-            for (auto &component : components)
-            {
-                component->OnTransformed(tParam);
-            }
+            glm::vec3 gaxis = tParam->rotation * glm::vec4(axis, 0.0f);
+            tParam->rotation = glm::rotate(tParam->rotation, det, gaxis);
+            UpdateTransform();
+        }
+
+        void TranslateLocal(glm::vec3 det)
+        {
+            glm::vec3 gdet = tParam->rotation * glm::vec4(det, 0.0f);
+            tParam->translation = glm::translate(tParam->translation, gdet);
+            tParam->pos = tParam->translation * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            UpdateTransform();
+        }
+
+        void TranslateGlobal(glm::vec3 det)
+        {
+            tParam->translation = glm::translate(tParam->translation, det);
+            tParam->pos = tParam->translation * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            UpdateTransform();
         }
 
     protected:
         std::vector<std::shared_ptr<Component>> components;
-        TransformParameter tParam;
+        std::shared_ptr<TransformParameter> tParam;
+
+    private:
+        void UpdateTransform()
+        {
+            tParam->model = tParam->translation * tParam->rotation;
+            for (auto &component : components)
+            {
+                component->OnTransformed(*tParam);
+            }
+        }
     };
 
 } // namespace common
@@ -143,6 +144,7 @@ namespace builtin_components
 
         virtual void OnStart()
         {
+            args->model = object->GetTransformInfo()->model;
             render_id = rd->GetRenderID(renderer::OPAQUE);
             renderer::RenderQueueItem item(material, mesh, args, mesh->id_count);
             rd->InsertToQueue(render_id, item, renderer::OPAQUE);
@@ -178,8 +180,10 @@ namespace builtin_components
             glm::mat4 projection) : rd(rd), projection(projection), Component(object)
         {
             auto tparam = object->GetTransformInfo();
-            view = glm::lookAt(tparam.pos, tparam.pos + tparam.front, tparam.up);
-            rd->UpdateVP(view, projection, tparam.pos);
+            glm::vec3 gfront = tparam->rotation * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+            glm::vec3 gup = tparam->rotation * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+            view = glm::lookAt(tparam->pos, tparam->pos + gfront, gup);
+            rd->UpdateVP(view, projection, tparam->pos);
             common::EventTransmitter::GetInstance()->SubscribeEvent(
                 common::EventType::EVENT_WINDOW_RESIZE,
                 std::static_pointer_cast<common::EventListener>(std::shared_ptr<Camera>(this)));
@@ -188,13 +192,15 @@ namespace builtin_components
         virtual void OnWindowResize(std::shared_ptr<common::ED_WindowResize> desc)
         {
             projection = glm::perspective(glm::radians(45.0f), desc->width * 1.0f / desc->height, 0.1f, 100.0f);
-            rd->UpdateVP(view, projection, object->GetTransformInfo().pos);
+            rd->UpdateVP(view, projection, object->GetTransformInfo()->pos);
         }
 
         virtual void OnTransformed(common::TransformParameter &param)
         {
-            view = glm::lookAt(param.pos, param.pos + param.front, param.up);
-            rd->UpdateVP(view, projection, object->GetTransformInfo().pos);
+            glm::vec3 gfront = param.rotation * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+            glm::vec3 gup = param.rotation * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+            view = glm::lookAt(param.pos, param.pos + gfront, gup);
+            rd->UpdateVP(view, projection, object->GetTransformInfo()->pos);
         }
 
     private:
@@ -226,11 +232,7 @@ namespace builtin_components
 
         virtual void OnTransformed(common::TransformParameter &param)
         {
-            light_param->inner_params.position = glm::vec4(
-                param.pos.x,
-                param.pos.y,
-                param.pos.z,
-                light_param->inner_params.position.w);
+            light_param->inner_params.position = glm::vec4(param.pos, light_param->inner_params.position.w);
             rd->UpdateLight(lid);
             //TODO update direction
         }

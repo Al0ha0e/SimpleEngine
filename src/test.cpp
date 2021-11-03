@@ -40,16 +40,16 @@ public:
         switch (desc->keycode)
         {
         case GLFW_KEY_W:
-            object->Transform(glm::vec3(0, moveSpeed, 0));
+            object->TranslateLocal(glm::vec3(0, 0, -moveSpeed));
             break;
         case GLFW_KEY_A:
-            object->Transform(glm::vec3(-moveSpeed, 0, 0));
+            object->TranslateLocal(glm::vec3(-moveSpeed, 0, 0));
             break;
         case GLFW_KEY_S:
-            object->Transform(glm::vec3(0, -moveSpeed, 0));
+            object->TranslateLocal(glm::vec3(0, 0, moveSpeed));
             break;
         case GLFW_KEY_D:
-            object->Transform(glm::vec3(moveSpeed, 0, 0));
+            object->TranslateLocal(glm::vec3(moveSpeed, 0, 0));
             break;
         }
     }
@@ -60,13 +60,13 @@ public:
         float yoffset = desc->dy;
         xoffset *= rotateSpeed;
         yoffset *= rotateSpeed;
-        object->Rotate(xoffset, yoffset);
+        object->RotateGlobal(-xoffset, glm::vec3(0.0f, 1.0f, 0.0f));
+        object->RotateGlobal(yoffset, glm::vec3(1.0f, 0.0f, 0.0f));
     }
 };
 
 int main()
 {
-
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -100,14 +100,12 @@ int main()
         return -1;
     }
 
-    glm::mat4 model(1.0f);
     //model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.5f, 0.0f));
 
-    glm::mat4 camModel;
     glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 
-    common::TransformParameter tp(model, glm::vec3());
-    common::TransformParameter tpCam(camModel, cameraPos);
+    auto tp = std::make_shared<common::TransformParameter>(glm::vec3(), glm::vec3());
+    auto tpCam = std::make_shared<common::TransformParameter>(cameraPos, glm::vec3());
 
     auto camObject = std::make_shared<common::GameObject>(tpCam);
 
@@ -123,11 +121,10 @@ int main()
         glm::vec4(cameraPos.x, cameraPos.y, cameraPos.z, 0.0f),
         glm::vec4(0.3f, 0.3f, 0.4f, 0.0f));
 
-    glm::mat4 lightModel;
     glm::vec4 lightpos(0.0f, 0.0f, 3.0f, 0.9f);
     glm::vec4 lightcolor(1.0f, 1.0f, 1.0f, 0.0f);
     glm::vec4 lightdirection;
-    common::TransformParameter tpLight(lightModel, glm::vec3(lightpos.x, lightpos.y, lightpos.z));
+    auto tpLight = std::make_shared<common::TransformParameter>(glm::vec3(lightpos.x, lightpos.y, lightpos.z), glm::vec3());
     auto inner_lp = renderer::InnerLightParameters(lightpos, lightcolor, lightdirection);
     auto light_prop = std::make_shared<renderer::LightParameters>(renderer::POINT_LIGHT, false, inner_lp);
     auto lightObject = std::make_shared<common::GameObject>(tpLight);
@@ -146,7 +143,7 @@ int main()
 
     auto mesh = std::make_shared<common::ModelMesh>("./assets/models/test.txt");
 
-    auto mat_args = std::make_shared<common::RenderArguments>(model);
+    auto mat_args = std::make_shared<common::RenderArguments>();
 
     unsigned int id = rder->GetMaterialID(renderer::OPAQUE);
     auto material = std::make_shared<builtin_materials::PhongMaterial>(shader, id, diffuse, specular, 32.0f);
@@ -161,8 +158,8 @@ int main()
 
     object->OnStart();
 
-    TestController controller(camObject, camSpeed, 0.05f);
-
+    //TestController controller(camObject, camSpeed, 0.0005f);
+    TestController controller(object, camSpeed, 0.0005f);
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
