@@ -211,13 +211,17 @@ namespace builtin_components
     {
     public:
         Light() {}
-        //TODO calc light pos, direction from transform
         Light(
             std::shared_ptr<common::GameObject> object,
             std::shared_ptr<renderer::LightParameters> light_param,
             std::shared_ptr<renderer::Renderer> rd)
             : light_param(light_param), rd(rd), Component(object)
         {
+            auto &tparam = object->GetTransformInfo();
+            auto &lparam = light_param->inner_params;
+            lparam.position = glm::vec4(tparam->pos, lparam.position.w);
+            glm::vec3 dir = tparam->rotation * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+            lparam.direction = glm::vec4(dir, lparam.direction.w);
         }
 
         virtual void OnStart()
@@ -232,9 +236,11 @@ namespace builtin_components
 
         virtual void OnTransformed(common::TransformParameter &param)
         {
-            light_param->inner_params.position = glm::vec4(param.pos, light_param->inner_params.position.w);
+            auto &lparam = light_param->inner_params;
+            lparam.position = glm::vec4(param.pos, lparam.position.w);
+            glm::vec3 dir = param.rotation * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+            lparam.direction = glm::vec4(dir, lparam.direction.w);
             rd->UpdateLight(lid);
-            //TODO update direction
         }
 
     private:

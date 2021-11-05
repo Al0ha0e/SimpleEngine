@@ -65,6 +65,37 @@ public:
     }
 };
 
+std::shared_ptr<common::GameObject> MakeCamera(
+    std::shared_ptr<renderer::Renderer> rder,
+    glm::vec3 pos,
+    glm::vec3 dir,
+    glm::mat4 projection)
+{
+    auto tpCam = std::make_shared<common::TransformParameter>(pos, dir);
+    auto camObject = std::make_shared<common::GameObject>(tpCam);
+    auto cam = std::make_shared<builtin_components::Camera>(camObject, rder, projection);
+    camObject->AddComponent(cam);
+    return camObject;
+}
+
+std::shared_ptr<common::GameObject> MakeLight(
+    std::shared_ptr<renderer::Renderer> rder,
+    renderer::LightType tp,
+    glm::vec3 pos,
+    glm::vec3 dir,
+    glm::vec3 color,
+    float intensity,
+    float spotangle)
+{
+    auto tpLight = std::make_shared<common::TransformParameter>(pos, dir);
+    auto inner_lp = renderer::InnerLightParameters(glm::vec4(glm::vec3(), intensity), glm::vec4(color, 0.0f), glm::vec4(glm::vec3(), spotangle));
+    auto light_prop = std::make_shared<renderer::LightParameters>(tp, false, inner_lp);
+    auto lightObject = std::make_shared<common::GameObject>(tpLight);
+    auto light = std::make_shared<builtin_components::Light>(lightObject, light_prop, rder);
+    lightObject->AddComponent(light);
+    return lightObject;
+}
+
 int main()
 {
     // glfw: initialize and configure
@@ -100,66 +131,71 @@ int main()
         return -1;
     }
 
-    //model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.5f, 0.0f));
-
-    glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-
-    auto tp = std::make_shared<common::TransformParameter>(glm::vec3(), glm::vec3());
-    auto tpCam = std::make_shared<common::TransformParameter>(cameraPos, glm::vec3());
-
-    auto camObject = std::make_shared<common::GameObject>(tpCam);
-
-    glm::mat4 view;
-    glm::mat4 projection(1.0f);
-    projection = glm::perspective(glm::radians(45.0f), SCR_WIDTH * 1.0f / SCR_HEIGHT, 0.1f, 100.0f);
-
     float camSpeed = 0.01;
 
-    auto rder = std::make_shared<renderer::Renderer>(
-        view,
-        projection,
-        glm::vec4(cameraPos.x, cameraPos.y, cameraPos.z, 0.0f),
-        glm::vec4(0.3f, 0.3f, 0.4f, 0.0f));
+    auto rder = std::make_shared<renderer::Renderer>(glm::vec4(0.0f, 0.2f, 0.0f, 0.0f));
 
-    glm::vec4 lightpos(0.0f, 0.0f, 3.0f, 0.9f);
-    glm::vec4 lightcolor(1.0f, 1.0f, 1.0f, 0.0f);
-    glm::vec4 lightdirection;
-    auto tpLight = std::make_shared<common::TransformParameter>(glm::vec3(lightpos.x, lightpos.y, lightpos.z), glm::vec3());
-    auto inner_lp = renderer::InnerLightParameters(lightpos, lightcolor, lightdirection);
-    auto light_prop = std::make_shared<renderer::LightParameters>(renderer::POINT_LIGHT, false, inner_lp);
-    auto lightObject = std::make_shared<common::GameObject>(tpLight);
-    auto light = std::make_shared<builtin_components::Light>(lightObject, light_prop, rder);
-    lightObject->AddComponent(light);
-    lightObject->OnStart();
+    auto lightObject1 = MakeLight(rder, renderer::DIRECTIONAL_LIGHT,
+                                  glm::vec3(), glm::vec3(glm::radians(60.0f), 0.0f, 0.0f),
+                                  glm::vec3(1.0f, 1.0f, 1.0f),
+                                  0.7f, 0.0f);
+    lightObject1->OnStart();
 
-    auto cam = std::make_shared<builtin_components::Camera>(camObject, rder, projection);
-    camObject->AddComponent(cam);
+    auto lightObject2 = MakeLight(rder, renderer::SPOT_LIGHT,
+                                  glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(glm::radians(150.0f), 0.0f, 0.0f),
+                                  glm::vec3(1.0f, 0.0f, 0.0f),
+                                  0.5f, glm::cos(glm::radians(30.5f)));
+    lightObject2->OnStart();
 
-    auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/fwd_v.txt", common::VERTEX_SHADER),
-                                                          common::Shader("./src/shaders/fwd_f.txt", common::FRAGMENT_SHADER));
+    auto lightObject3 = MakeLight(rder, renderer::POINT_LIGHT,
+                                  glm::vec3(1.0f, 0.0f, -1.0f), glm::vec3(),
+                                  glm::vec3(0.0f, 0.0f, 1.0f),
+                                  1.6f, 0.0f);
+    lightObject3->OnStart();
 
-    auto diffuse = std::make_shared<common::Texture>("./assets/textures/diffuse.png");
-    auto specular = std::make_shared<common::Texture>("./assets/textures/specular.png");
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), SCR_WIDTH * 1.0f / SCR_HEIGHT, 0.1f, 100.0f);
+    auto camObject = MakeCamera(rder, glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(), projection);
+    camObject->OnStart();
 
-    auto mesh = std::make_shared<common::ModelMesh>("./assets/models/test.txt");
+    auto tp = std::make_shared<common::TransformParameter>(glm::vec3(), glm::vec3());
+    auto tp1 = std::make_shared<common::TransformParameter>(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3());
+    auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/fwd.vs", common::VERTEX_SHADER),
+                                                          common::Shader("./src/shaders/fwd.fs", common::FRAGMENT_SHADER));
+
+    auto diffuse = std::make_shared<common::Texture>("./assets/textures/sp.png");
+    auto specular = std::make_shared<common::Texture>("./assets/textures/sp.png");
+
+    auto diffuse1 = std::make_shared<common::Texture>("./assets/textures/diffuse.png");
+    auto specular1 = std::make_shared<common::Texture>("./assets/textures/specular.png");
+
+    auto mesh = std::make_shared<common::ModelMesh>("./assets/models/test2.txt");
+    auto mesh1 = std::make_shared<common::ModelMesh>("./assets/models/test.txt");
 
     auto mat_args = std::make_shared<common::RenderArguments>();
+    auto mat_args1 = std::make_shared<common::RenderArguments>();
 
     unsigned int id = rder->GetMaterialID(renderer::OPAQUE);
-    auto material = std::make_shared<builtin_materials::PhongMaterial>(shader, id, diffuse, specular, 32.0f);
+    unsigned int id1 = rder->GetMaterialID(renderer::OPAQUE);
+    auto material = std::make_shared<builtin_materials::PhongMaterial>(shader, id, diffuse, specular, 16.0f);
+    auto material1 = std::make_shared<builtin_materials::PhongMaterial>(shader, id1, diffuse1, specular1, 32.0f);
     // auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, id, texture);
     rder->RegisterMaterial(id, material, renderer::OPAQUE);
+    rder->RegisterMaterial(id1, material1, renderer::OPAQUE);
 
     auto object = std::make_shared<common::GameObject>(tp);
+    auto object1 = std::make_shared<common::GameObject>(tp1);
 
     auto render_component = std::make_shared<builtin_components::RenderableObject>(object, rder, material, mesh, mat_args);
-
     object->AddComponent(render_component);
-
     object->OnStart();
 
-    //TestController controller(camObject, camSpeed, 0.0005f);
-    TestController controller(object, camSpeed, 0.0005f);
+    auto render_component1 = std::make_shared<builtin_components::RenderableObject>(object1, rder, material1, mesh1, mat_args1);
+    object1->AddComponent(render_component1);
+    object1->OnStart();
+
+    TestController controller(camObject, camSpeed, 0.0005f);
+    //TestController controller(object, camSpeed, 0.0005f);
+    //TestController controller(lightObject1, camSpeed, 0.0005f);
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))

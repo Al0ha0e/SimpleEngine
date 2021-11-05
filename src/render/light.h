@@ -126,17 +126,17 @@ namespace renderer
             {
             case POINT_LIGHT:
                 glBindBuffer(GL_UNIFORM_BUFFER, ubo_pointlights);
-                send_lightdata(pointlight_cnt * 3 * sizeof(glm::vec4), param->inner_params);
+                send_lightdata(param->index * 3 * sizeof(glm::vec4), param->inner_params);
                 glBindBuffer(GL_UNIFORM_BUFFER, 0);
                 break;
             case SPOT_LIGHT:
                 glBindBuffer(GL_UNIFORM_BUFFER, ubo_spotlights);
-                send_lightdata(spotlight_cnt * 3 * sizeof(glm::vec4), param->inner_params);
+                send_lightdata(param->index * 3 * sizeof(glm::vec4), param->inner_params);
                 glBindBuffer(GL_UNIFORM_BUFFER, 0);
                 break;
             case DIRECTIONAL_LIGHT:
                 glBindBuffer(GL_UNIFORM_BUFFER, ubo_directionals);
-                send_lightdata(directional_cnt * 3 * sizeof(glm::vec4), param->inner_params);
+                send_lightdata(param->index * 3 * sizeof(glm::vec4), param->inner_params);
                 glBindBuffer(GL_UNIFORM_BUFFER, 0);
                 break;
             }
@@ -197,7 +197,7 @@ namespace renderer
 
         inline void send_lightdata(unsigned int offset, InnerLightParameters &param)
         {
-            std::cout << "OFFSET " << offset << std::endl;
+            // std::cout << "OFFSET " << offset << std::endl;
             glBufferSubData(GL_UNIFORM_BUFFER, offset, sizeof(glm::vec4), glm::value_ptr(param.position));
             glBufferSubData(GL_UNIFORM_BUFFER, offset + sizeof(glm::vec4), sizeof(glm::vec4), glm::value_ptr(param.color));
             glBufferSubData(GL_UNIFORM_BUFFER, offset + 2 * sizeof(glm::vec4), sizeof(glm::vec4), glm::value_ptr(param.direction));

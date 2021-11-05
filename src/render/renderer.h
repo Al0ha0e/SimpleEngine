@@ -98,10 +98,7 @@ namespace renderer
     {
     public:
         Renderer() {}
-        Renderer(glm::mat4 view,
-                 glm::mat4 projection,
-                 glm::vec4 viewPos,
-                 glm::vec4 ambient) : view(view), projection(projection), viewPos(viewPos), ambient(ambient)
+        Renderer(glm::vec4 ambient) : ambient(ambient)
         {
             glEnable(GL_DEPTH_TEST);
             glEnable(GL_CULL_FACE);
@@ -109,9 +106,6 @@ namespace renderer
             glBindBuffer(GL_UNIFORM_BUFFER, ubo_VP);
             glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4) + sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
             glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_VP);
-            glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(view));
-            glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));
-            glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, sizeof(glm::vec4), glm::value_ptr(viewPos));
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
             glGenBuffers(1, &ubo_GI);
