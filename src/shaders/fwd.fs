@@ -2,7 +2,7 @@
 
 out vec4 FragColor;
 in vec3 FragPos;  
-in vec3 Normal;  
+in mat3 TBN;  
 in vec2 TexCoords;
 
 layout(std140, binding = 0) uniform VPBlock{
@@ -17,6 +17,7 @@ layout(std140, binding = 1) uniform GIBlock{
 
 uniform sampler2D diffuse;
 uniform sampler2D specular;
+uniform sampler2D normal;
 uniform float shininess;
 
 struct Light {
@@ -50,8 +51,10 @@ void handlePointLight(vec3 norm, vec3 viewDir, vec3 diffuse_rgb, vec3 specular_r
     
     // specular
     vec3 reflectDir = reflect(-lightDir, norm);  
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-    vec3 f_specular = spec * specular_rgb;  
+    //vec3 reflectDir = normalize(lightDir+viewDir);
+    float spec = step(0.0,dot(lightDir, norm)) * pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    //float spec = pow(max(dot(norm, reflectDir), 0.0), shininess);
+    vec3 f_specular = vec3(1.0, 1.0, 1.0) * spec * specular_rgb.r / 2.0;  
     
     float dist = length(l0.position.xyz - FragPos);
     float attenuation = 1.0 / (1 + 0.14 * dist + 0.07 * dist * dist);
@@ -59,6 +62,7 @@ void handlePointLight(vec3 norm, vec3 viewDir, vec3 diffuse_rgb, vec3 specular_r
     vec3 result = l0.color.xyz * attenuation * intensity * (f_diffuse + f_specular);
     FragColor += vec4(result, 1.0);
 }
+
 
 void handleSpotLight(vec3 norm, vec3 viewDir, vec3 diffuse_rgb, vec3 specular_rgb){
     Light l0 = spotlights[0];
@@ -71,8 +75,10 @@ void handleSpotLight(vec3 norm, vec3 viewDir, vec3 diffuse_rgb, vec3 specular_rg
     
     // specular
     vec3 reflectDir = reflect(-lightDir, norm);  
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-    vec3 f_specular = spec * specular_rgb;  
+    //vec3 reflectDir = normalize(lightDir+viewDir);
+    float spec = step(0.0,dot(lightDir, norm)) * pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    //float spec = pow(max(dot(norm, reflectDir), 0.0), shininess);
+    vec3 f_specular = vec3(1.0, 1.0, 1.0) * spec * specular_rgb.r / 2.0;  
     
     float dist = length(l0.position.xyz - FragPos);
     float attenuation = 1.0 / (1 + 0.14 * dist + 0.07 * dist * dist);
@@ -91,20 +97,25 @@ void handleDirectional(vec3 norm, vec3 viewDir, vec3 diffuse_rgb, vec3 specular_
     vec3 lightDir = normalize(-l0.direction.xyz);
     float diff = max(dot(norm, lightDir), 0.0);
     float intensity = l0.position.w; 
-    vec3 f_diffuse = l0.color.xyz * intensity * diff * diffuse_rgb;  
+    vec3 f_diffuse = diff * diffuse_rgb;  
     
     // specular
     vec3 reflectDir = reflect(-lightDir, norm);  
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-    vec3 f_specular = l0.color.xyz * intensity * spec * specular_rgb;  
+    //vec3 reflectDir = normalize(lightDir+viewDir);
+    float spec = step(0.0,dot(lightDir, norm)) * pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    //float spec = pow(max(dot(norm, reflectDir), 0.0), shininess);
+    vec3 f_specular = vec3(1.0, 1.0, 1.0) * spec * specular_rgb.r / 2.0;  
         
-    vec3 result = f_diffuse + f_specular;
+    vec3 result = l0.color.xyz * intensity * (f_diffuse + f_specular);
     FragColor += vec4(result, 1.0);
 }
 
 void main()
 {
-    vec3 norm = normalize(Normal);
+    // vec3 norm = TBN[2];
+    vec3 norm = texture(normal,TexCoords).rgb;
+    norm = normalize(norm * 2.0 - 1.0);   
+    norm = normalize(TBN * norm);
     vec3 viewDir = normalize(viewPos.xyz - FragPos);
     vec3 diffuse_rgb = texture(diffuse, TexCoords).rgb;
     vec3 specular_rgb = texture(specular, TexCoords).rgb;

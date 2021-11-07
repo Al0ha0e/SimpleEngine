@@ -41,12 +41,14 @@ public:
         {
         case GLFW_KEY_W:
             object->TranslateLocal(glm::vec3(0, 0, -moveSpeed));
+            //object->TranslateLocal(glm::vec3(0, moveSpeed, 0));
             break;
         case GLFW_KEY_A:
             object->TranslateLocal(glm::vec3(-moveSpeed, 0, 0));
             break;
         case GLFW_KEY_S:
             object->TranslateLocal(glm::vec3(0, 0, moveSpeed));
+            //object->TranslateLocal(glm::vec3(0, -moveSpeed, 0));
             break;
         case GLFW_KEY_D:
             object->TranslateLocal(glm::vec3(moveSpeed, 0, 0));
@@ -133,11 +135,11 @@ int main()
 
     float camSpeed = 0.01;
 
-    auto rder = std::make_shared<renderer::Renderer>(glm::vec4(0.0f, 0.2f, 0.0f, 0.0f));
+    auto rder = std::make_shared<renderer::Renderer>(glm::vec4(0.3f, 0.3f, 0.3f, 0.0f));
 
     auto lightObject1 = MakeLight(rder, renderer::DIRECTIONAL_LIGHT,
-                                  glm::vec3(), glm::vec3(glm::radians(60.0f), 0.0f, 0.0f),
-                                  glm::vec3(1.0f, 1.0f, 1.0f),
+                                  glm::vec3(), glm::vec3(glm::radians(90.0f), 0.0f, 0.0f),
+                                  glm::vec3(1.0f, 1.0f, 0.7f),
                                   0.7f, 0.0f);
     lightObject1->OnStart();
 
@@ -148,13 +150,13 @@ int main()
     lightObject2->OnStart();
 
     auto lightObject3 = MakeLight(rder, renderer::POINT_LIGHT,
-                                  glm::vec3(1.0f, 0.0f, -1.0f), glm::vec3(),
+                                  glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(),
                                   glm::vec3(0.0f, 0.0f, 1.0f),
-                                  1.6f, 0.0f);
+                                  0.6f, 0.0f);
     lightObject3->OnStart();
 
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), SCR_WIDTH * 1.0f / SCR_HEIGHT, 0.1f, 100.0f);
-    auto camObject = MakeCamera(rder, glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(), projection);
+    auto camObject = MakeCamera(rder, glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(), projection);
     camObject->OnStart();
 
     auto tp = std::make_shared<common::TransformParameter>(glm::vec3(), glm::vec3());
@@ -162,22 +164,24 @@ int main()
     auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/fwd.vs", common::VERTEX_SHADER),
                                                           common::Shader("./src/shaders/fwd.fs", common::FRAGMENT_SHADER));
 
-    auto diffuse = std::make_shared<common::Texture>("./assets/textures/sp.png");
-    auto specular = std::make_shared<common::Texture>("./assets/textures/sp.png");
+    auto diffuse = std::make_shared<common::Texture>("./assets/textures/stone.png");
+    auto specular = std::make_shared<common::Texture>("./assets/textures/stone_s.png");
+    auto tnormal = std::make_shared<common::Texture>("./assets/textures/stone_n.png");
 
-    auto diffuse1 = std::make_shared<common::Texture>("./assets/textures/diffuse.png");
-    auto specular1 = std::make_shared<common::Texture>("./assets/textures/specular.png");
+    auto diffuse1 = std::make_shared<common::Texture>("./assets/textures/blocks/sand.png");
+    auto specular1 = std::make_shared<common::Texture>("./assets/textures/blocks/sand_s.png");
+    auto tnormal1 = std::make_shared<common::Texture>("./assets/textures/blocks/sand_n.png");
 
     auto mesh = std::make_shared<common::ModelMesh>("./assets/models/test2.txt");
-    auto mesh1 = std::make_shared<common::ModelMesh>("./assets/models/test.txt");
+    auto mesh1 = std::make_shared<common::ModelMesh>("./assets/models/test3.txt");
 
     auto mat_args = std::make_shared<common::RenderArguments>();
     auto mat_args1 = std::make_shared<common::RenderArguments>();
 
     unsigned int id = rder->GetMaterialID(renderer::OPAQUE);
     unsigned int id1 = rder->GetMaterialID(renderer::OPAQUE);
-    auto material = std::make_shared<builtin_materials::PhongMaterial>(shader, id, diffuse, specular, 16.0f);
-    auto material1 = std::make_shared<builtin_materials::PhongMaterial>(shader, id1, diffuse1, specular1, 32.0f);
+    auto material = std::make_shared<builtin_materials::PhongMaterial>(shader, id, diffuse, specular, tnormal, 2.0f);
+    auto material1 = std::make_shared<builtin_materials::PhongMaterial>(shader, id1, diffuse1, specular1, tnormal1, 2.0f);
     // auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, id, texture);
     rder->RegisterMaterial(id, material, renderer::OPAQUE);
     rder->RegisterMaterial(id1, material1, renderer::OPAQUE);
@@ -194,8 +198,8 @@ int main()
     object1->OnStart();
 
     TestController controller(camObject, camSpeed, 0.0005f);
-    //TestController controller(object, camSpeed, 0.0005f);
-    //TestController controller(lightObject1, camSpeed, 0.0005f);
+    //TestController controller(object1, camSpeed, 0.0005f);
+    //TestController controller(lightObject3, camSpeed, 0.0005f);
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))

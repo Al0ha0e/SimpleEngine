@@ -140,7 +140,7 @@ namespace renderer
         {
             this->view = view;
             this->projection = projection;
-            this->viewPos = glm::vec4(viewPos.x, viewPos.y, viewPos.z, 0.0f);
+            this->viewPos = glm::vec4(viewPos, 0.0f);
             glBindBuffer(GL_UNIFORM_BUFFER, ubo_VP);
             glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(view));
             glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));

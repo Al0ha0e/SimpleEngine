@@ -168,6 +168,14 @@ namespace common
     };
 
     //TODO layout description
+    struct VertexProperties
+    {
+        float position[3];
+        float normal[3];
+        float tangent[3];
+        float uv[2];
+    };
+
     struct ModelMesh
     {
         ModelMesh() {}
@@ -177,13 +185,22 @@ namespace common
             std::ifstream f(pth);
             std::string line;
             std::string elem;
+            float tmp[8];
+            VertexProperties vprop;
             while (std::getline(f, line))
             {
                 if (line.length() == 0)
                     break;
                 std::istringstream s(line);
+                int i = 0;
                 while (std::getline(s, elem, ' '))
-                    vertices.push_back(std::atof(elem.c_str()));
+                {
+                    tmp[i] = std::atof(elem.c_str());
+                    i++;
+                }
+                memcpy(&vprop, tmp, 6 * sizeof(float));
+                memcpy(&vprop.uv, tmp + 6, 2 * sizeof(float));
+                vertices.push_back(vprop);
                 v_count++;
             }
 
@@ -196,6 +213,36 @@ namespace common
             }
             f.close();
 
+            for (int i = 0; i < indices.size() / 3; i++)
+            {
+                VertexProperties &v1 = vertices[indices[i * 3]];
+                VertexProperties &v2 = vertices[indices[i * 3 + 1]];
+                VertexProperties &v3 = vertices[indices[i * 3 + 2]];
+                glm::vec3 pos1(v1.position[0], v1.position[1], v1.position[2]);
+                glm::vec3 pos2(v2.position[0], v2.position[1], v2.position[2]);
+                glm::vec3 pos3(v3.position[0], v3.position[1], v3.position[2]);
+                glm::vec2 uv1(v1.uv[0], v1.uv[1]);
+                glm::vec2 uv2(v2.uv[0], v2.uv[1]);
+                glm::vec2 uv3(v3.uv[0], v3.uv[1]);
+                glm::vec3 edge1 = pos2 - pos1;
+                glm::vec3 edge2 = pos3 - pos1;
+                glm::vec2 deltaUV1 = uv2 - uv1;
+                glm::vec2 deltaUV2 = uv3 - uv1;
+                float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+                glm::vec3 tangent;
+                tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+                tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+                tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+                tangent = glm::normalize(tangent);
+                for (int j = 0; j < 3; j++)
+                {
+                    VertexProperties &v = vertices[indices[i * 3 + j]];
+                    v.tangent[0] = tangent.x;
+                    v.tangent[1] = tangent.y;
+                    v.tangent[2] = tangent.z;
+                }
+            }
+
             glGenVertexArrays(1, &vao);
             glGenBuffers(1, &vbo);
             glGenBuffers(1, &ebo);
@@ -203,19 +250,22 @@ namespace common
             glBindVertexArray(vao);
 
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(VertexProperties), vertices.data(), GL_DYNAMIC_DRAW);
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_DYNAMIC_DRAW);
 
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexProperties), (void *)0);
             glEnableVertexAttribArray(0);
 
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexProperties), (void *)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
 
-            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(VertexProperties), (void *)(6 * sizeof(float)));
             glEnableVertexAttribArray(2);
+
+            glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(VertexProperties), (void *)(9 * sizeof(float)));
+            glEnableVertexAttribArray(3);
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
@@ -233,7 +283,8 @@ namespace common
             glBindVertexArray(vao);
         }
 
-        std::vector<float> vertices;
+        std::vector<VertexProperties> vertices;
+
         std::vector<unsigned int> indices;
 
         int v_count;
