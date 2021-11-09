@@ -81,14 +81,14 @@ namespace common
 
         void RotateGlobal(float det, glm::vec3 &axis)
         {
-            tParam->rotation = glm::rotate(tParam->rotation, det, axis);
+            glm::vec3 gaxis = glm::transpose(tParam->rotation) * glm::vec4(axis, 0.0f);
+            tParam->rotation = glm::rotate(tParam->rotation, det, glm::normalize(gaxis));
             UpdateTransform();
         }
 
         void RotateLocal(float det, glm::vec3 &axis)
         {
-            glm::vec3 gaxis = tParam->rotation * glm::vec4(axis, 0.0f);
-            tParam->rotation = glm::rotate(tParam->rotation, det, gaxis);
+            tParam->rotation = glm::rotate(tParam->rotation, det, glm::normalize(axis));
             UpdateTransform();
         }
 

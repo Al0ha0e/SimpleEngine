@@ -63,7 +63,7 @@ public:
         xoffset *= rotateSpeed;
         yoffset *= rotateSpeed;
         object->RotateGlobal(-xoffset, glm::vec3(0.0f, 1.0f, 0.0f));
-        object->RotateGlobal(yoffset, glm::vec3(1.0f, 0.0f, 0.0f));
+        object->RotateLocal(yoffset, glm::vec3(1.0f, 0.0f, 0.0f));
     }
 };
 
@@ -164,9 +164,9 @@ int main()
     auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/fwd.vs", common::VERTEX_SHADER),
                                                           common::Shader("./src/shaders/fwd.fs", common::FRAGMENT_SHADER));
 
-    auto diffuse = std::make_shared<common::Texture>("./assets/textures/stone.png");
-    auto specular = std::make_shared<common::Texture>("./assets/textures/stone_s.png");
-    auto tnormal = std::make_shared<common::Texture>("./assets/textures/stone_n.png");
+    auto diffuse = std::make_shared<common::Texture>("./assets/textures/blocks/cobblestone.png");
+    auto specular = std::make_shared<common::Texture>("./assets/textures/blocks/cobblestone_s.png");
+    auto tnormal = std::make_shared<common::Texture>("./assets/textures/blocks/cobblestone_n.png");
 
     auto diffuse1 = std::make_shared<common::Texture>("./assets/textures/blocks/sand.png");
     auto specular1 = std::make_shared<common::Texture>("./assets/textures/blocks/sand_s.png");
@@ -180,7 +180,7 @@ int main()
 
     unsigned int id = rder->GetMaterialID(renderer::OPAQUE);
     unsigned int id1 = rder->GetMaterialID(renderer::OPAQUE);
-    auto material = std::make_shared<builtin_materials::PhongMaterial>(shader, id, diffuse, specular, tnormal, 2.0f);
+    auto material = std::make_shared<builtin_materials::PhongMaterial>(shader, id, diffuse, specular, tnormal, 8.0f);
     auto material1 = std::make_shared<builtin_materials::PhongMaterial>(shader, id1, diffuse1, specular1, tnormal1, 2.0f);
     // auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, id, texture);
     rder->RegisterMaterial(id, material, renderer::OPAQUE);
