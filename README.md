@@ -2,9 +2,14 @@
 
 `scons`
 
-#### TODO
+#### Features
+- Basic Forward Pipeline
+- Phong Model
+- Normal Map
+- Directional, Point and Spot Lights
 
-- PBR
+#### TODO
+- PBR with IBL
 - Cluster Based Forward+
 - PCF Shadow
 - SSR

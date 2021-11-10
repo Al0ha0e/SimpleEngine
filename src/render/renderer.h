@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 
 #include "../common/common.h"
+#include "skybox.h"
 #include "../events/event.h"
 #include "light.h"
 
@@ -98,7 +99,7 @@ namespace renderer
     {
     public:
         Renderer() {}
-        Renderer(glm::vec4 ambient) : ambient(ambient)
+        Renderer(glm::vec4 ambient, std::shared_ptr<SkyBox> skybox) : ambient(ambient), skybox(skybox)
         {
             glEnable(GL_DEPTH_TEST);
             glEnable(GL_CULL_FACE);
@@ -160,6 +161,8 @@ namespace renderer
         glm::vec4 ambient;
         unsigned int ubo_VP;
         unsigned int ubo_GI;
+
+        std::shared_ptr<SkyBox> skybox;
     };
 }
 

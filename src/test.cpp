@@ -135,7 +135,21 @@ int main()
 
     float camSpeed = 0.01;
 
-    auto rder = std::make_shared<renderer::Renderer>(glm::vec4(0.3f, 0.3f, 0.3f, 0.0f));
+    std::vector<std::string> faces{
+        std::string("./assets/textures/skybox/right.jpg"),
+        std::string("./assets/textures/skybox/left.jpg"),
+        std::string("./assets/textures/skybox/top.jpg"),
+        std::string("./assets/textures/skybox/bottom.jpg"),
+        std::string("./assets/textures/skybox/front.jpg"),
+        std::string("./assets/textures/skybox/back.jpg")};
+
+    auto skyboxShader = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/skybox.vs", common::VERTEX_SHADER),
+                                                                common::Shader("./src/shaders/skybox.fs", common::FRAGMENT_SHADER));
+    auto boxTexture = std::make_shared<common::TextureCube>(faces);
+    auto skyboxMaterial = std::make_shared<builtin_materials::SkyboxMaterial>(skyboxShader, boxTexture);
+    auto skybox = std::make_shared<renderer::SkyBox>(skyboxMaterial);
+
+    auto rder = std::make_shared<renderer::Renderer>(glm::vec4(0.3f, 0.3f, 0.3f, 0.0f), skybox);
 
     auto lightObject1 = MakeLight(rder, renderer::DIRECTIONAL_LIGHT,
                                   glm::vec3(), glm::vec3(glm::radians(90.0f), 0.0f, 0.0f),
@@ -164,13 +178,13 @@ int main()
     auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/fwd.vs", common::VERTEX_SHADER),
                                                           common::Shader("./src/shaders/fwd.fs", common::FRAGMENT_SHADER));
 
-    auto diffuse = std::make_shared<common::Texture>("./assets/textures/blocks/cobblestone.png");
-    auto specular = std::make_shared<common::Texture>("./assets/textures/blocks/cobblestone_s.png");
-    auto tnormal = std::make_shared<common::Texture>("./assets/textures/blocks/cobblestone_n.png");
+    auto diffuse = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone.png");
+    auto specular = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone_s.png");
+    auto tnormal = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone_n.png");
 
-    auto diffuse1 = std::make_shared<common::Texture>("./assets/textures/blocks/sand.png");
-    auto specular1 = std::make_shared<common::Texture>("./assets/textures/blocks/sand_s.png");
-    auto tnormal1 = std::make_shared<common::Texture>("./assets/textures/blocks/sand_n.png");
+    auto diffuse1 = std::make_shared<common::Texture2D>("./assets/textures/blocks/sand.png");
+    auto specular1 = std::make_shared<common::Texture2D>("./assets/textures/blocks/sand_s.png");
+    auto tnormal1 = std::make_shared<common::Texture2D>("./assets/textures/blocks/sand_n.png");
 
     auto mesh = std::make_shared<common::ModelMesh>("./assets/models/test2.txt");
     auto mesh1 = std::make_shared<common::ModelMesh>("./assets/models/test3.txt");

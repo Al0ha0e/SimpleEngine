@@ -11,7 +11,7 @@ namespace builtin_materials
         NaiveMaterial() {}
         NaiveMaterial(std::shared_ptr<common::ShaderProgram> shader,
                       unsigned int material_id,
-                      std::shared_ptr<common::Texture> texture)
+                      std::shared_ptr<common::Texture2D> texture)
             : texture(texture), Material(shader, material_id)
         {
         }
@@ -32,7 +32,7 @@ namespace builtin_materials
             //TODO texture dispose
         }
 
-        std::shared_ptr<common::Texture> texture;
+        std::shared_ptr<common::Texture2D> texture;
     };
 
     struct PhongMaterial : public common::Material
@@ -40,9 +40,9 @@ namespace builtin_materials
         PhongMaterial() {}
         PhongMaterial(std::shared_ptr<common::ShaderProgram> shader,
                       unsigned int material_id,
-                      std::shared_ptr<common::Texture> diffuse,
-                      std::shared_ptr<common::Texture> specular,
-                      std::shared_ptr<common::Texture> normal,
+                      std::shared_ptr<common::Texture2D> diffuse,
+                      std::shared_ptr<common::Texture2D> specular,
+                      std::shared_ptr<common::Texture2D> normal,
                       float shininess)
             : diffuse(diffuse), specular(specular), normal(normal), shininess(shininess), Material(shader, material_id)
         {
@@ -74,9 +74,9 @@ namespace builtin_materials
             //TODO texture dispose
         }
 
-        std::shared_ptr<common::Texture> diffuse;
-        std::shared_ptr<common::Texture> specular;
-        std::shared_ptr<common::Texture> normal;
+        std::shared_ptr<common::Texture2D> diffuse;
+        std::shared_ptr<common::Texture2D> specular;
+        std::shared_ptr<common::Texture2D> normal;
         float shininess;
     };
 }
