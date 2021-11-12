@@ -177,14 +177,20 @@ int main()
     auto tp1 = std::make_shared<common::TransformParameter>(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3());
     auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/fwd.vs", common::VERTEX_SHADER),
                                                           common::Shader("./src/shaders/fwd.fs", common::FRAGMENT_SHADER));
+    auto shader1 = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/pbr.vs", common::VERTEX_SHADER),
+                                                           common::Shader("./src/shaders/pbr.fs", common::FRAGMENT_SHADER));
 
     auto diffuse = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone.png");
     auto specular = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone_s.png");
     auto tnormal = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone_n.png");
 
-    auto diffuse1 = std::make_shared<common::Texture2D>("./assets/textures/blocks/sand.png");
-    auto specular1 = std::make_shared<common::Texture2D>("./assets/textures/blocks/sand_s.png");
-    auto tnormal1 = std::make_shared<common::Texture2D>("./assets/textures/blocks/sand_n.png");
+    // auto diffuse1 = std::make_shared<common::Texture2D>("./assets/textures/blocks/sand.png");
+    // auto specular1 = std::make_shared<common::Texture2D>("./assets/textures/blocks/sand_s.png");
+    // auto tnormal1 = std::make_shared<common::Texture2D>("./assets/textures/blocks/sand_n.png");
+    auto albedo = std::make_shared<common::Texture2D>("./assets/textures/albedo.png");
+    auto metallic = std::make_shared<common::Texture2D>("./assets/textures/metallic.png");
+    auto roughness = std::make_shared<common::Texture2D>("./assets/textures/roughness.png");
+    auto tnormal1 = std::make_shared<common::Texture2D>("./assets/textures/rustediron2_normal.png");
 
     auto mesh = std::make_shared<common::ModelMesh>("./assets/models/test2.txt");
     auto mesh1 = std::make_shared<common::ModelMesh>("./assets/models/test3.txt");
@@ -195,7 +201,7 @@ int main()
     unsigned int id = rder->GetMaterialID(renderer::OPAQUE);
     unsigned int id1 = rder->GetMaterialID(renderer::OPAQUE);
     auto material = std::make_shared<builtin_materials::PhongMaterial>(shader, id, diffuse, specular, tnormal, 8.0f);
-    auto material1 = std::make_shared<builtin_materials::PhongMaterial>(shader, id1, diffuse1, specular1, tnormal1, 2.0f);
+    auto material1 = std::make_shared<builtin_materials::PBRMaterial>(shader1, id1, albedo, metallic, roughness, tnormal1);
     // auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, id, texture);
     rder->RegisterMaterial(id, material, renderer::OPAQUE);
     rder->RegisterMaterial(id1, material1, renderer::OPAQUE);

@@ -79,5 +79,51 @@ namespace builtin_materials
         std::shared_ptr<common::Texture2D> normal;
         float shininess;
     };
+
+    struct PBRMaterial : public common::Material
+    {
+        PBRMaterial() {}
+        PBRMaterial(std::shared_ptr<common::ShaderProgram> shader,
+                    unsigned int material_id,
+                    std::shared_ptr<common::Texture2D> albedo,
+                    std::shared_ptr<common::Texture2D> metallic,
+                    std::shared_ptr<common::Texture2D> roughness,
+                    std::shared_ptr<common::Texture2D> normal)
+            : albedo(albedo), metallic(metallic), roughness(roughness), normal(normal), Material(shader, material_id)
+        {
+            glUseProgram(shader->shader);
+            glUniform1i(glGetUniformLocation(shader->shader, "albedoMap"), 0);
+            glUniform1i(glGetUniformLocation(shader->shader, "metalicMap"), 1);
+            glUniform1i(glGetUniformLocation(shader->shader, "roughnessMap"), 2);
+            glUniform1i(glGetUniformLocation(shader->shader, "normalMap"), 3);
+        }
+
+        virtual void PrepareForDraw()
+        {
+            glUseProgram(shader->shader);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, albedo->texture);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, metallic->texture);
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, roughness->texture);
+            glActiveTexture(GL_TEXTURE3);
+            glBindTexture(GL_TEXTURE_2D, normal->texture);
+        };
+
+        virtual void Dispose()
+        {
+            if (shader != nullptr)
+            {
+                shader->Dispose();
+            }
+            //TODO texture dispose
+        }
+
+        std::shared_ptr<common::Texture2D> albedo;
+        std::shared_ptr<common::Texture2D> metallic;
+        std::shared_ptr<common::Texture2D> roughness;
+        std::shared_ptr<common::Texture2D> normal;
+    };
 }
 #endif
