@@ -160,13 +160,13 @@ int main()
     auto lightObject2 = MakeLight(rder, renderer::SPOT_LIGHT,
                                   glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(glm::radians(150.0f), 0.0f, 0.0f),
                                   glm::vec3(1.0f, 0.0f, 0.0f),
-                                  0.5f, glm::cos(glm::radians(30.5f)));
+                                  2.5f, glm::cos(glm::radians(30.5f)));
     lightObject2->OnStart();
 
     auto lightObject3 = MakeLight(rder, renderer::POINT_LIGHT,
                                   glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(),
                                   glm::vec3(0.0f, 0.0f, 1.0f),
-                                  0.6f, 0.0f);
+                                  2.6f, 0.0f);
     lightObject3->OnStart();
 
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), SCR_WIDTH * 1.0f / SCR_HEIGHT, 0.1f, 100.0f);
@@ -175,21 +175,24 @@ int main()
 
     auto tp = std::make_shared<common::TransformParameter>(glm::vec3(), glm::vec3());
     auto tp1 = std::make_shared<common::TransformParameter>(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3());
-    auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/fwd.vs", common::VERTEX_SHADER),
-                                                          common::Shader("./src/shaders/fwd.fs", common::FRAGMENT_SHADER));
+    auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/pbr.vs", common::VERTEX_SHADER),
+                                                          common::Shader("./src/shaders/parallax_pbr.fs", common::FRAGMENT_SHADER));
     auto shader1 = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/pbr.vs", common::VERTEX_SHADER),
                                                            common::Shader("./src/shaders/pbr.fs", common::FRAGMENT_SHADER));
 
-    auto diffuse = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone.png");
-    auto specular = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone_s.png");
-    auto tnormal = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone_n.png");
+    auto albedo = std::make_shared<common::Texture2D>("./assets/textures/octostone-Unreal-Engine/octostoneAlbedo.png");
+    auto metallic = std::make_shared<common::Texture2D>("./assets/textures/octostone-Unreal-Engine/octostoneMetallic.png");
+    auto roughness = std::make_shared<common::Texture2D>("./assets/textures/octostone-Unreal-Engine/octostoneRoughness2.png");
+    auto tnormal = std::make_shared<common::Texture2D>("./assets/textures/octostone-Unreal-Engine/octostoneNormalc.png");
+    auto depth = std::make_shared<common::Texture2D>("./assets/textures/octostone-Unreal-Engine/octostoneHeightc.png");
+    // auto diffuse = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone.png");
+    // auto specular = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone_s.png");
+    // auto tnormal = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone_n.png");
+    // auto depth = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone_o.png");
 
-    // auto diffuse1 = std::make_shared<common::Texture2D>("./assets/textures/blocks/sand.png");
-    // auto specular1 = std::make_shared<common::Texture2D>("./assets/textures/blocks/sand_s.png");
-    // auto tnormal1 = std::make_shared<common::Texture2D>("./assets/textures/blocks/sand_n.png");
-    auto albedo = std::make_shared<common::Texture2D>("./assets/textures/albedo.png");
-    auto metallic = std::make_shared<common::Texture2D>("./assets/textures/metallic.png");
-    auto roughness = std::make_shared<common::Texture2D>("./assets/textures/roughness.png");
+    auto albedo1 = std::make_shared<common::Texture2D>("./assets/textures/albedo.png");
+    auto metallic1 = std::make_shared<common::Texture2D>("./assets/textures/metallic.png");
+    auto roughness1 = std::make_shared<common::Texture2D>("./assets/textures/roughness.png");
     auto tnormal1 = std::make_shared<common::Texture2D>("./assets/textures/rustediron2_normal.png");
 
     auto mesh = std::make_shared<common::ModelMesh>("./assets/models/test2.txt");
@@ -200,8 +203,8 @@ int main()
 
     unsigned int id = rder->GetMaterialID(renderer::OPAQUE);
     unsigned int id1 = rder->GetMaterialID(renderer::OPAQUE);
-    auto material = std::make_shared<builtin_materials::PhongMaterial>(shader, id, diffuse, specular, tnormal, 8.0f);
-    auto material1 = std::make_shared<builtin_materials::PBRMaterial>(shader1, id1, albedo, metallic, roughness, tnormal1);
+    auto material = std::make_shared<builtin_materials::ParallaxPBRMaterial>(shader, id, albedo, metallic, roughness, tnormal, depth, 0.04f);
+    auto material1 = std::make_shared<builtin_materials::PBRMaterial>(shader1, id1, albedo1, metallic1, roughness1, tnormal1);
     // auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, id, texture);
     rder->RegisterMaterial(id, material, renderer::OPAQUE);
     rder->RegisterMaterial(id1, material1, renderer::OPAQUE);
@@ -209,11 +212,11 @@ int main()
     auto object = std::make_shared<common::GameObject>(tp);
     auto object1 = std::make_shared<common::GameObject>(tp1);
 
-    auto render_component = std::make_shared<builtin_components::RenderableObject>(object, rder, material, mesh, mat_args);
+    auto render_component = std::make_shared<builtin_components::RenderableObject>(object, rder, material1, mesh, mat_args1);
     object->AddComponent(render_component);
     object->OnStart();
 
-    auto render_component1 = std::make_shared<builtin_components::RenderableObject>(object1, rder, material1, mesh1, mat_args1);
+    auto render_component1 = std::make_shared<builtin_components::RenderableObject>(object1, rder, material, mesh1, mat_args);
     object1->AddComponent(render_component1);
     object1->OnStart();
 
