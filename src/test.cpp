@@ -135,17 +135,11 @@ int main()
 
     float camSpeed = 0.01;
 
-    std::vector<std::string> faces{
-        std::string("./assets/textures/skybox/right.jpg"),
-        std::string("./assets/textures/skybox/left.jpg"),
-        std::string("./assets/textures/skybox/top.jpg"),
-        std::string("./assets/textures/skybox/bottom.jpg"),
-        std::string("./assets/textures/skybox/front.jpg"),
-        std::string("./assets/textures/skybox/back.jpg")};
+    auto rManager = resources::ResourceManager();
 
-    auto skyboxShader = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/skybox.vs", common::VERTEX_SHADER),
-                                                                common::Shader("./src/shaders/skybox.fs", common::FRAGMENT_SHADER));
-    auto boxTexture = std::make_shared<common::TextureCube>(faces);
+    auto skyboxShader = rManager.LoadMeta<common::ShaderProgram>("./src/shaders/skybox.json");
+
+    auto boxTexture = rManager.LoadMeta<common::TextureCube>("./assets/textures/skybox.json");
     auto skyboxMaterial = std::make_shared<builtin_materials::SkyboxMaterial>(skyboxShader, boxTexture);
     auto skybox = std::make_shared<renderer::SkyBox>(skyboxMaterial);
 
@@ -154,7 +148,7 @@ int main()
     auto lightObject1 = MakeLight(rder, renderer::DIRECTIONAL_LIGHT,
                                   glm::vec3(), glm::vec3(glm::radians(90.0f), 0.0f, 0.0f),
                                   glm::vec3(1.0f, 1.0f, 0.7f),
-                                  0.7f, 0.0f);
+                                  2.7f, 0.0f);
     lightObject1->OnStart();
 
     auto lightObject2 = MakeLight(rder, renderer::SPOT_LIGHT,
@@ -175,25 +169,6 @@ int main()
 
     auto tp = std::make_shared<common::TransformParameter>(glm::vec3(), glm::vec3());
     auto tp1 = std::make_shared<common::TransformParameter>(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3());
-    auto shader = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/pbr.vs", common::VERTEX_SHADER),
-                                                          common::Shader("./src/shaders/parallax_pbr.fs", common::FRAGMENT_SHADER));
-    auto shader1 = std::make_shared<common::ShaderProgram>(common::Shader("./src/shaders/pbr.vs", common::VERTEX_SHADER),
-                                                           common::Shader("./src/shaders/pbr.fs", common::FRAGMENT_SHADER));
-
-    auto albedo = std::make_shared<common::Texture2D>("./assets/textures/octostone-Unreal-Engine/octostoneAlbedo.png");
-    auto metallic = std::make_shared<common::Texture2D>("./assets/textures/octostone-Unreal-Engine/octostoneMetallic.png");
-    auto roughness = std::make_shared<common::Texture2D>("./assets/textures/octostone-Unreal-Engine/octostoneRoughness2.png");
-    auto tnormal = std::make_shared<common::Texture2D>("./assets/textures/octostone-Unreal-Engine/octostoneNormalc.png");
-    auto depth = std::make_shared<common::Texture2D>("./assets/textures/octostone-Unreal-Engine/octostoneHeightc.png");
-    // auto diffuse = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone.png");
-    // auto specular = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone_s.png");
-    // auto tnormal = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone_n.png");
-    // auto depth = std::make_shared<common::Texture2D>("./assets/textures/blocks/cobblestone_o.png");
-
-    auto albedo1 = std::make_shared<common::Texture2D>("./assets/textures/albedo.png");
-    auto metallic1 = std::make_shared<common::Texture2D>("./assets/textures/metallic.png");
-    auto roughness1 = std::make_shared<common::Texture2D>("./assets/textures/roughness.png");
-    auto tnormal1 = std::make_shared<common::Texture2D>("./assets/textures/rustediron2_normal.png");
 
     auto mesh = std::make_shared<common::ModelMesh>("./assets/models/test2.txt");
     auto mesh1 = std::make_shared<common::ModelMesh>("./assets/models/test3.txt");
@@ -203,9 +178,10 @@ int main()
 
     unsigned int id = rder->GetMaterialID(renderer::OPAQUE);
     unsigned int id1 = rder->GetMaterialID(renderer::OPAQUE);
-    auto material = std::make_shared<builtin_materials::ParallaxPBRMaterial>(shader, id, albedo, metallic, roughness, tnormal, depth, 0.04f);
-    auto material1 = std::make_shared<builtin_materials::PBRMaterial>(shader1, id1, albedo1, metallic1, roughness1, tnormal1);
-    // auto material = std::make_shared<builtin_materials::NaiveMaterial>(shader, id, texture);
+    auto material = rManager.LoadMeta<builtin_materials::CustomMaterial>("./assets/materials/parallax_pbr.json");
+    material->material_id = id;
+    auto material1 = rManager.LoadMeta<builtin_materials::CustomMaterial>("./assets/materials/pbr.json");
+    material1->material_id = id1;
     rder->RegisterMaterial(id, material, renderer::OPAQUE);
     rder->RegisterMaterial(id1, material1, renderer::OPAQUE);
 

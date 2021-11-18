@@ -1,0 +1,4 @@
+{
+    "vertex":"./src/shaders/pbr.vs",
+    "fragment":"./src/shaders/pbr.fs"
+}

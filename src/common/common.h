@@ -19,6 +19,9 @@
 #include <list>
 #include <map>
 
+#include "json.hpp"
+#include "../resource/resource.h"
+
 namespace common
 {
     enum ShaderType
@@ -65,12 +68,22 @@ namespace common
         }
     };
 
-    struct ShaderProgram
+    struct ShaderProgram : public resources::SerializableObject
     {
         unsigned int shader;
 
         ShaderProgram() {}
         ShaderProgram(Shader &&vs, Shader &&fs)
+        {
+            init(std::move(vs), std::move(fs));
+        }
+
+        void Dispose()
+        {
+            glDeleteProgram(shader);
+        }
+
+        void init(Shader &&vs, Shader &&fs)
         {
             shader = glCreateProgram();
             glAttachShader(shader, vs.shader);
@@ -91,16 +104,25 @@ namespace common
             fs.Dispose();
         }
 
-        void Dispose()
+        virtual void UnserializeJSON(std::string s, resources::ResourceManager *manager)
         {
-            glDeleteProgram(shader);
+            auto j = nlohmann::json::parse(s);
+            std::string vpth = j["vertex"].get<std::string>();
+            std::string fpth = j["fragment"].get<std::string>();
+
+            init(Shader(vpth, VERTEX_SHADER), Shader(fpth, FRAGMENT_SHADER));
         }
     };
 
-    struct Texture2D
+    struct Texture2D : public resources::SerializableObject
     {
         Texture2D() {}
         Texture2D(std::string pth)
+        {
+            this->Load(pth);
+        }
+
+        virtual void Load(std::string pth)
         {
             glGenTextures(1, &texture);
             glBindTexture(GL_TEXTURE_2D, texture);
@@ -137,10 +159,28 @@ namespace common
         unsigned int texture;
     };
 
-    struct TextureCube
+    struct TextureCube : public resources::SerializableObject
     {
         TextureCube() {}
         TextureCube(std::vector<std::string> &faces)
+        {
+            init(faces);
+        }
+
+        virtual void UnserializeJSON(std::string s, resources::ResourceManager *manager)
+        {
+            auto j = nlohmann::json::parse(s);
+            std::vector<std::string> faces(6);
+            faces[0] = j["right"].get<std::string>();
+            faces[1] = j["left"].get<std::string>();
+            faces[2] = j["top"].get<std::string>();
+            faces[3] = j["bottom"].get<std::string>();
+            faces[4] = j["front"].get<std::string>();
+            faces[5] = j["back"].get<std::string>();
+            init(faces);
+        }
+
+        void init(std::vector<std::string> &faces)
         {
             glGenTextures(1, &texture);
             glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
