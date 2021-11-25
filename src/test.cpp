@@ -139,7 +139,7 @@ int main()
 
     auto skyboxShader = rManager.LoadMeta<common::ShaderProgram>("./src/shaders/skybox.json");
 
-    auto boxTexture = rManager.LoadMeta<common::TextureCube>("./assets/textures/skybox.json");
+    auto boxTexture = rManager.LoadMeta<common::TextureCube>("./assets/textures/skybox/skybox.json");
     auto skyboxMaterial = std::make_shared<builtin_materials::SkyboxMaterial>(skyboxShader, boxTexture);
     auto skybox = std::make_shared<renderer::SkyBox>(skyboxMaterial);
 

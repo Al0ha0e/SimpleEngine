@@ -16,10 +16,8 @@ layout(std140, binding = 1) uniform GIBlock{
 };
 
 uniform sampler2D albedoMap;
-uniform sampler2D metallicMap;
-uniform sampler2D roughnessMap;
-uniform sampler2D normalMap;
-uniform sampler2D depthMap;
+uniform sampler2D mraMap;
+uniform sampler2D nhMap;
 uniform float height_scale;
 
 struct Light {
@@ -85,8 +83,8 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
 
 vec3 CalcPBR(vec3 N, vec3 V, vec3 L, vec3 radiance, vec3 albedo, vec2 material)
 {
-    float metallic = material.g;
-    float roughness = material.r;
+    float metallic = material.r;
+    float roughness = material.g;
 
     vec3 F0 = vec3(0.04); 
     F0 = mix(F0, albedo, metallic);
@@ -154,7 +152,7 @@ vec3 handleDirectional(vec3 N, vec3 V, vec3 albedo, vec2 material)
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir)
 { 
-    float height =  texture(depthMap, texCoords).r;    
+    float height =  texture(nhMap, texCoords).a;    
     vec2 p = viewDir.xy / (viewDir.z + 0.2) * (height * height_scale  - height_scale * 0.5);
     return texCoords + p;    
 }
@@ -164,19 +162,17 @@ void main()
     vec3 V = normalize(viewPos.xyz - FragPos);
     vec2 texCoords = ParallaxMapping(TexCoords, normalize(transpose(TBN) * V));
 
-    vec3 N = texture(normalMap, texCoords).rgb;
+    vec3 N = texture(nhMap, texCoords).rgb;
     N = normalize(N * 2.0 - 1.0);   
     N = normalize(TBN * N);
     vec3 albedo = texture(albedoMap, texCoords).rgb;
-    vec2 material;
-    material.r = texture(roughnessMap, texCoords).r;
-    material.g = texture(metallicMap, texCoords).r;
+    vec3 material = texture(mraMap, texCoords).rgb;
     
-    vec3 color = ambient.rgb * albedo;
+    vec3 color = ambient.rgb * albedo * material.b;
 
-    color += handlePointLight(N, V, albedo, material);
-    color += handleSpotLight(N, V, albedo, material);
-    color += handleDirectional(N, V, albedo, material);
+    color += handlePointLight(N, V, albedo, material.rg);
+    color += handleSpotLight(N, V, albedo, material.rg);
+    color += handleDirectional(N, V, albedo, material.rg);
 
     // HDR tonemapping
     //color = color / (color + vec3(1.0));

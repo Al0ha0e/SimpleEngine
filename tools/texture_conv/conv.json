@@ -1,0 +1,9 @@
+{
+    "metallic":"./assets/textures/octostone-Unreal-Engine/octostoneMetallic.png",
+    "roughness":"./assets/textures/octostone-Unreal-Engine/octostoneRoughness2.png",
+    "ao":"./assets/textures/octostone-Unreal-Engine/octostoneAmbient_Occlusionc.png",
+    "normal":"./assets/textures/octostone-Unreal-Engine/octostoneNormalc.png",
+    "height":"./assets/textures/octostone-Unreal-Engine/octostoneHeightc.png",
+    "mra":"./assets/textures/octostone-Unreal-Engine/mra.png",
+    "nh":"./assets/textures/octostone-Unreal-Engine/nh.png"
+}
