@@ -14,6 +14,13 @@ void GenPBR(std::vector<std::string> &path, std::vector<std::string> &opath)
     unsigned char *nh;
     for (int i = 0; i < 3; i++)
     {
+        if (!path[i].length())
+        {
+            for (int j = 0; j < w; j++)
+                for (int k = 0; k < h; k++)
+                    mra[(j * h + k) * 3 + i] = 255;
+            continue;
+        }
         unsigned char *data = stbi_load(path[i].c_str(), &w, &h, &nrChannels, 0);
         if (!data)
         {
@@ -44,16 +51,25 @@ void GenPBR(std::vector<std::string> &path, std::vector<std::string> &opath)
                 nh[(j * h + k) * 4 + i] = data[(j * h + k) * nrChannels + i];
     stbi_image_free(data);
 
-    data = stbi_load(path[4].c_str(), &w, &h, &nrChannels, 0);
-    if (!data)
+    if (path[4].length())
     {
-        std::cout << path[4] << " ERR" << std::endl;
+        data = stbi_load(path[4].c_str(), &w, &h, &nrChannels, 0);
+        if (!data)
+        {
+            std::cout << path[4] << " ERR" << std::endl;
+        }
+        std::cout << "W " << w << " H " << h << " channel " << nrChannels << std::endl;
+        for (int j = 0; j < w; j++)
+            for (int k = 0; k < h; k++)
+                nh[(j * h + k) * 4 + 3] = data[(j * h + k) * nrChannels];
+        stbi_image_free(data);
     }
-    std::cout << "W " << w << " H " << h << " channel " << nrChannels << std::endl;
-    for (int j = 0; j < w; j++)
-        for (int k = 0; k < h; k++)
-            nh[(j * h + k) * 4 + 3] = data[(j * h + k) * nrChannels];
-    stbi_image_free(data);
+    else
+    {
+        for (int j = 0; j < w; j++)
+            for (int k = 0; k < h; k++)
+                nh[(j * h + k) * 4 + 3] = 127;
+    }
 
     stbi_write_png(opath[0].c_str(), w, h, 3, mra, 0);
     stbi_write_png(opath[1].c_str(), w, h, 4, nh, 0);

@@ -1,9 +1,9 @@
 {
-    "metallic":"./assets/textures/octostone-Unreal-Engine/octostoneMetallic.png",
-    "roughness":"./assets/textures/octostone-Unreal-Engine/octostoneRoughness2.png",
-    "ao":"./assets/textures/octostone-Unreal-Engine/octostoneAmbient_Occlusionc.png",
-    "normal":"./assets/textures/octostone-Unreal-Engine/octostoneNormalc.png",
-    "height":"./assets/textures/octostone-Unreal-Engine/octostoneHeightc.png",
-    "mra":"./assets/textures/octostone-Unreal-Engine/mra.png",
-    "nh":"./assets/textures/octostone-Unreal-Engine/nh.png"
+    "metallic":"./assets/textures/pitted-rusted-metal1-ue/pitted-rusted-metal1_metallic.png",
+    "roughness":"./assets/textures/pitted-rusted-metal1-ue/pitted-rusted-metal1_roughness.png",
+    "ao":"",
+    "normal":"./assets/textures/pitted-rusted-metal1-ue/pitted-rusted-metal1_normal-dx.png",
+    "height":"",
+    "mra":"./assets/textures/pitted-rusted-metal1-ue/mra.png",
+    "nh":"./assets/textures/pitted-rusted-metal1-ue/nh.png"
 }

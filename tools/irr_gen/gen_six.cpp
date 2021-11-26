@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 
     // glfw window creation
     // --------------------
-    GLFWwindow *window = glfwCreateWindow(outsz, outsz, "GenIrr", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(512, 512, "GenIrr", NULL, NULL);
     glfwMakeContextCurrent(window);
     if (window == NULL)
     {
@@ -177,16 +177,27 @@ int main(int argc, char *argv[])
     glBufferData(GL_PIXEL_PACK_BUFFER, sizeof(float) * outsz * outsz, NULL, GL_STREAM_COPY);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 
+    unsigned int captureFBO, captureRBO;
+    glGenFramebuffers(1, &captureFBO);
+    glGenRenderbuffers(1, &captureRBO);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB, outsz, outsz);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, captureRBO);
+
+    glUseProgram(shader->shader);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, hdrTexture);
+    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+    glBindVertexArray(vao);
+
+    glViewport(0, 0, outsz, outsz);
     for (int i = 0; i < 6; i++)
     {
         std::cout << i << std::endl;
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glUseProgram(shader->shader);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, hdrTexture);
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(captureViews[i]));
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-        glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
