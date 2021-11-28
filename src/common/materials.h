@@ -22,7 +22,7 @@ namespace builtin_materials
         virtual void PrepareForDraw()
         {
             glUseProgram(shader->shader);
-            glActiveTexture(GL_TEXTURE0);
+            glActiveTexture(GL_TEXTURE0 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, texture->texture);
         };
 
@@ -52,19 +52,19 @@ namespace builtin_materials
             glUseProgram(shader->shader);
             unsigned int shineLoc = glGetUniformLocation(shader->shader, "shininess");
             glUniform1f(shineLoc, shininess);
-            glUniform1i(glGetUniformLocation(shader->shader, "diffuse"), 0);
-            glUniform1i(glGetUniformLocation(shader->shader, "specular"), 1);
-            glUniform1i(glGetUniformLocation(shader->shader, "normal"), 2);
+            glUniform1i(glGetUniformLocation(shader->shader, "diffuse"), 0 + common::ENGINE_TEXTURE_CNT);
+            glUniform1i(glGetUniformLocation(shader->shader, "specular"), 1 + common::ENGINE_TEXTURE_CNT);
+            glUniform1i(glGetUniformLocation(shader->shader, "normal"), 2 + common::ENGINE_TEXTURE_CNT);
         }
 
         virtual void PrepareForDraw()
         {
             glUseProgram(shader->shader);
-            glActiveTexture(GL_TEXTURE0);
+            glActiveTexture(GL_TEXTURE0 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, diffuse->texture);
-            glActiveTexture(GL_TEXTURE1);
+            glActiveTexture(GL_TEXTURE1 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, specular->texture);
-            glActiveTexture(GL_TEXTURE2);
+            glActiveTexture(GL_TEXTURE2 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, normal->texture);
         };
 
@@ -101,22 +101,22 @@ namespace builtin_materials
             glUniform1f(shineLoc, shininess);
             unsigned int heightLoc = glGetUniformLocation(shader->shader, "height_scale");
             glUniform1f(heightLoc, height_scale);
-            glUniform1i(glGetUniformLocation(shader->shader, "diffuse"), 0);
-            glUniform1i(glGetUniformLocation(shader->shader, "specular"), 1);
-            glUniform1i(glGetUniformLocation(shader->shader, "normal"), 2);
-            glUniform1i(glGetUniformLocation(shader->shader, "depth"), 3);
+            glUniform1i(glGetUniformLocation(shader->shader, "diffuse"), 0 + common::ENGINE_TEXTURE_CNT);
+            glUniform1i(glGetUniformLocation(shader->shader, "specular"), 1 + common::ENGINE_TEXTURE_CNT);
+            glUniform1i(glGetUniformLocation(shader->shader, "normal"), 2 + common::ENGINE_TEXTURE_CNT);
+            glUniform1i(glGetUniformLocation(shader->shader, "depth"), 3 + common::ENGINE_TEXTURE_CNT);
         }
 
         virtual void PrepareForDraw()
         {
             glUseProgram(shader->shader);
-            glActiveTexture(GL_TEXTURE0);
+            glActiveTexture(GL_TEXTURE0 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, diffuse->texture);
-            glActiveTexture(GL_TEXTURE1);
+            glActiveTexture(GL_TEXTURE1 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, specular->texture);
-            glActiveTexture(GL_TEXTURE2);
+            glActiveTexture(GL_TEXTURE2 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, normal->texture);
-            glActiveTexture(GL_TEXTURE3);
+            glActiveTexture(GL_TEXTURE3 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, depth->texture);
         };
 
@@ -149,22 +149,22 @@ namespace builtin_materials
             : albedo(albedo), metallic(metallic), roughness(roughness), normal(normal), Material(shader, material_id)
         {
             glUseProgram(shader->shader);
-            glUniform1i(glGetUniformLocation(shader->shader, "albedoMap"), 0);
-            glUniform1i(glGetUniformLocation(shader->shader, "metalicMap"), 1);
-            glUniform1i(glGetUniformLocation(shader->shader, "roughnessMap"), 2);
-            glUniform1i(glGetUniformLocation(shader->shader, "normalMap"), 3);
+            glUniform1i(glGetUniformLocation(shader->shader, "albedoMap"), 0 + common::ENGINE_TEXTURE_CNT);
+            glUniform1i(glGetUniformLocation(shader->shader, "metalicMap"), 1 + common::ENGINE_TEXTURE_CNT);
+            glUniform1i(glGetUniformLocation(shader->shader, "roughnessMap"), 2 + common::ENGINE_TEXTURE_CNT);
+            glUniform1i(glGetUniformLocation(shader->shader, "normalMap"), 3 + common::ENGINE_TEXTURE_CNT);
         }
 
         virtual void PrepareForDraw()
         {
             glUseProgram(shader->shader);
-            glActiveTexture(GL_TEXTURE0);
+            glActiveTexture(GL_TEXTURE0 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, albedo->texture);
-            glActiveTexture(GL_TEXTURE1);
+            glActiveTexture(GL_TEXTURE1 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, metallic->texture);
-            glActiveTexture(GL_TEXTURE2);
+            glActiveTexture(GL_TEXTURE2 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, roughness->texture);
-            glActiveTexture(GL_TEXTURE3);
+            glActiveTexture(GL_TEXTURE3 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, normal->texture);
         };
 
@@ -200,25 +200,25 @@ namespace builtin_materials
             glUseProgram(shader->shader);
             unsigned int heightLoc = glGetUniformLocation(shader->shader, "height_scale");
             glUniform1f(heightLoc, height_scale);
-            glUniform1i(glGetUniformLocation(shader->shader, "albedoMap"), 0);
-            glUniform1i(glGetUniformLocation(shader->shader, "metalicMap"), 1);
-            glUniform1i(glGetUniformLocation(shader->shader, "roughnessMap"), 2);
-            glUniform1i(glGetUniformLocation(shader->shader, "normalMap"), 3);
-            glUniform1i(glGetUniformLocation(shader->shader, "depthMap"), 4);
+            glUniform1i(glGetUniformLocation(shader->shader, "albedoMap"), 0 + common::ENGINE_TEXTURE_CNT);
+            glUniform1i(glGetUniformLocation(shader->shader, "metalicMap"), 1 + common::ENGINE_TEXTURE_CNT);
+            glUniform1i(glGetUniformLocation(shader->shader, "roughnessMap"), 2 + common::ENGINE_TEXTURE_CNT);
+            glUniform1i(glGetUniformLocation(shader->shader, "normalMap"), 3 + common::ENGINE_TEXTURE_CNT);
+            glUniform1i(glGetUniformLocation(shader->shader, "depthMap"), 4 + common::ENGINE_TEXTURE_CNT);
         }
 
         virtual void PrepareForDraw()
         {
             glUseProgram(shader->shader);
-            glActiveTexture(GL_TEXTURE0);
+            glActiveTexture(GL_TEXTURE0 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, albedo->texture);
-            glActiveTexture(GL_TEXTURE1);
+            glActiveTexture(GL_TEXTURE1 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, metallic->texture);
-            glActiveTexture(GL_TEXTURE2);
+            glActiveTexture(GL_TEXTURE2 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, roughness->texture);
-            glActiveTexture(GL_TEXTURE3);
+            glActiveTexture(GL_TEXTURE3 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, normal->texture);
-            glActiveTexture(GL_TEXTURE4);
+            glActiveTexture(GL_TEXTURE4 + common::ENGINE_TEXTURE_CNT);
             glBindTexture(GL_TEXTURE_2D, depth->texture);
         };
 
@@ -277,7 +277,7 @@ namespace builtin_materials
                 auto tex = manager->Load<common::Texture2D>(texture_info["path"].get<std::string>());
                 textures_2d.insert(kv_tex2d(name, tex));
                 idxs.insert(kv_int(name, texture_cnt));
-                glUniform1i(glGetUniformLocation(shader->shader, name.c_str()), texture_cnt);
+                glUniform1i(glGetUniformLocation(shader->shader, name.c_str()), texture_cnt + common::ENGINE_TEXTURE_CNT);
                 texture_cnt++;
             }
             // for (auto &texture_info : txcube)
@@ -310,8 +310,17 @@ namespace builtin_materials
             glUseProgram(shader->shader);
             for (auto &tex : textures_2d)
             {
-                glActiveTexture(GL_TEXTURE0 + idxs[tex.first]);
+                glActiveTexture(GL_TEXTURE0 + common::ENGINE_TEXTURE_CNT + idxs[tex.first]);
                 glBindTexture(GL_TEXTURE_2D, tex.second->texture);
+            }
+
+            for (auto &val_info : float_vals)
+            {
+                glUniform1f(idxs[val_info.first], val_info.second);
+            }
+            for (auto &val_info : int_vals)
+            {
+                glUniform1f(idxs[val_info.first], val_info.second);
             }
         }
 
