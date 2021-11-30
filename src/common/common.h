@@ -122,6 +122,39 @@ namespace common
             this->Load(pth);
         }
 
+        virtual void UnserializeJSON(std::string s, resources::ResourceManager *manager)
+        {
+            auto j = nlohmann::json::parse(s);
+            unsigned int wraps = j["wraps"].get<unsigned int>();
+            unsigned int wrapt = j["wrapt"].get<unsigned int>();
+            unsigned int minfilter = j["minfilter"].get<unsigned int>();
+            unsigned int magfilter = j["magfilter"].get<unsigned int>();
+            unsigned int miplevel = j["miplevel"].get<unsigned int>();
+            bool automip = j["automip"].get<bool>();
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, miplevel - 1);
+            if (automip)
+            {
+                std::string pth = j["paths"][0].get<std::string>();
+                loadImage(pth, 0);
+                glGenerateMipmap(GL_TEXTURE_2D);
+            }
+            else
+            {
+                for (int i = 0; i < miplevel; i++)
+                {
+                    std::string pth = j["paths"][i].get<std::string>();
+                    loadImage(pth, i);
+                }
+            }
+        }
+
         virtual void Load(std::string pth)
         {
             glGenTextures(1, &texture);
@@ -130,6 +163,15 @@ namespace common
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            this->loadImage(pth, 0);
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
+
+        unsigned int texture;
+
+    private:
+        void loadImage(std::string &pth, int level)
+        {
             int width, height, nrChannels;
             unsigned char *data = stbi_load(pth.c_str(), &width, &height, &nrChannels, 0);
             if (data)
@@ -147,8 +189,7 @@ namespace common
                     format = GL_RGBA;
                     break;
                 }
-                glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-                glGenerateMipmap(GL_TEXTURE_2D);
+                glTexImage2D(GL_TEXTURE_2D, level, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
             }
             else
             {
@@ -156,7 +197,6 @@ namespace common
             }
             stbi_image_free(data);
         }
-        unsigned int texture;
     };
 
     struct TextureCube : public resources::SerializableObject

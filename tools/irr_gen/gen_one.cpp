@@ -163,6 +163,18 @@ int main(int argc, char *argv[])
     void *scrdata = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_WRITE);
     stbi_write_png((outpath + mode + ".png").c_str(), width, height, 3, scrdata, 0);
     glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+    std::ofstream outjson(outpath + mode + ".json");
+    outjson << "{\n";
+    outjson << "\"wraps\":" << GL_CLAMP_TO_EDGE << ",\n";
+    outjson << "\"wrapt\":" << GL_CLAMP_TO_EDGE << ",\n";
+    outjson << "\"minfilter\":" << GL_LINEAR << ",\n";
+    outjson << "\"magfilter\":" << GL_LINEAR << ",\n";
+    outjson << "\"miplevel\":1,\n";
+    outjson << "\"automip\":false,\n";
+    outjson << "\"paths\":[\"" << outpath + mode + ".png"
+            << "\"]\n";
+    outjson << "}\n";
+    outjson.close();
 
     return 0;
 }
