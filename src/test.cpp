@@ -137,11 +137,7 @@ int main()
 
     auto rManager = resources::ResourceManager();
 
-    auto skyboxShader = rManager.LoadMeta<common::ShaderProgram>("./src/shaders/skybox.json");
-
-    auto boxTexture = rManager.LoadMeta<common::TextureCube>("./assets/textures/skybox/skybox.json");
-    auto skyboxMaterial = std::make_shared<builtin_materials::SkyboxMaterial>(skyboxShader, boxTexture);
-    auto skybox = std::make_shared<renderer::SkyBox>(skyboxMaterial);
+    auto skybox = rManager.LoadMeta<renderer::SkyBox>("./assets/skybox/skybox.json");
 
     auto rder = std::make_shared<renderer::Renderer>(glm::vec4(0.3f, 0.3f, 0.3f, 0.0f), skybox);
 
@@ -178,9 +174,9 @@ int main()
 
     unsigned int id = rder->GetMaterialID(renderer::OPAQUE);
     unsigned int id1 = rder->GetMaterialID(renderer::OPAQUE);
-    auto material = rManager.LoadMeta<builtin_materials::CustomMaterial>("./assets/materials/parallax_pbr.json");
+    auto material = rManager.LoadMeta<builtin_materials::CustomMaterial>("./assets/materials/pbr.json");
     material->material_id = id;
-    auto material1 = rManager.LoadMeta<builtin_materials::CustomMaterial>("./assets/materials/pbr.json");
+    auto material1 = rManager.LoadMeta<builtin_materials::CustomMaterial>("./assets/materials/parallax_pbr.json");
     material1->material_id = id1;
     rder->RegisterMaterial(id, material, renderer::OPAQUE);
     rder->RegisterMaterial(id1, material1, renderer::OPAQUE);

@@ -46,7 +46,7 @@ static float skyboxVertices[] = {
 
 namespace renderer
 {
-    SkyBox::SkyBox(std::shared_ptr<builtin_materials::SkyboxMaterial> material) : material(material)
+    void SkyBox::init()
     {
         glGenVertexArrays(1, &vao);
         glGenBuffers(1, &vbo);
@@ -56,5 +56,9 @@ namespace renderer
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
         glBindVertexArray(0);
+
+        glBindTextureUnit(1, this->irradiance_map->texture);
+        glBindTextureUnit(2, this->prefiltered_map->texture);
+        glBindTextureUnit(3, this->lut_map->texture);
     }
 }

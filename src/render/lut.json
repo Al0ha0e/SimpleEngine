@@ -1,0 +1,11 @@
+{
+"wraps":33071,
+"wrapt":33071,
+"minfilter":9729,
+"magfilter":9729,
+"miplevel":1,
+"automip":false,
+"paths":[
+"./src/render/ibl_brdf_lut.png"
+]
+}

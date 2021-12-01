@@ -14,7 +14,9 @@ layout(std140, binding = 0) uniform VPBlock{
 layout(std140, binding = 1) uniform GIBlock{
     vec4 ambient;
 };
-
+layout (binding = 1) uniform sampler2D irradianceMap;
+layout (binding = 2) uniform sampler2D prefilteredMap;
+layout (binding = 3) uniform sampler2D lutMap;
 uniform sampler2D albedoMap;
 uniform sampler2D mraMap;
 uniform sampler2D nhMap;
@@ -80,6 +82,11 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
+
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}  
 
 vec3 CalcPBR(vec3 N, vec3 V, vec3 L, vec3 radiance, vec3 albedo, vec2 material)
 {
@@ -153,8 +160,19 @@ vec3 handleDirectional(vec3 N, vec3 V, vec3 albedo, vec2 material)
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir)
 { 
     float height =  texture(nhMap, texCoords).a;    
-    vec2 p = viewDir.xy / (viewDir.z + 0.2) * (height * height_scale  - height_scale * 0.5);
+    vec2 p = viewDir.xy / (viewDir.z + 0.2) * (height - 0.5) * height_scale;
     return texCoords + p;    
+}
+
+
+const vec2 invAtan = vec2(0.1591, 0.3183);
+vec2 SampleSphericalMap(vec3 v)
+{
+    v = normalize(v);
+    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+    uv *= invAtan;
+    uv += 0.5;
+    return uv;
 }
 
 void main()
@@ -168,7 +186,23 @@ void main()
     vec3 albedo = texture(albedoMap, texCoords).rgb;
     vec3 material = texture(mraMap, texCoords).rgb;
     
-    vec3 color = ambient.rgb * albedo * material.b;
+    float metallic = material.r;
+    float roughness = material.g;
+    float ao = material.b;
+
+    vec3 F0 = vec3(0.04); 
+    F0 = mix(F0, albedo, metallic);
+    vec3 kS = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness); 
+    vec3 kD = 1.0 - kS;
+    vec3 irradiance = texture(irradianceMap, SampleSphericalMap(N)).rgb;
+
+    vec3 R = reflect(-V, N);
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(prefilteredMap, SampleSphericalMap(R), roughness * MAX_REFLECTION_LOD).rgb; 
+    vec2 envBRDF  = texture(lutMap, vec2(max(dot(N, V), 0.0), roughness)).rg;
+    vec3 specular = prefilteredColor * (kS * envBRDF.x + envBRDF.y);
+
+    vec3 color = (kD * irradiance * albedo + specular) * ao;
 
     color += handlePointLight(N, V, albedo, material.rg);
     color += handleSpotLight(N, V, albedo, material.rg);

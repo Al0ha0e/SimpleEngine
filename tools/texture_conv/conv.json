@@ -1,9 +1,9 @@
 {
-    "metallic":"./assets/textures/pitted-rusted-metal1-ue/pitted-rusted-metal1_metallic.png",
-    "roughness":"./assets/textures/pitted-rusted-metal1-ue/pitted-rusted-metal1_roughness.png",
-    "ao":"",
-    "normal":"./assets/textures/pitted-rusted-metal1-ue/pitted-rusted-metal1_normal-dx.png",
-    "height":"",
-    "mra":"./assets/textures/pitted-rusted-metal1-ue/mra.png",
-    "nh":"./assets/textures/pitted-rusted-metal1-ue/nh.png"
+    "metallic":"./assets/textures/worn-shiny-metal-ue/worn-shiny-metal-Metallic.png",
+    "roughness":"./assets/textures/worn-shiny-metal-ue/worn-shiny-metal-Roughness.png",
+    "ao":"./assets/textures/worn-shiny-metal-ue/worn-shiny-metal-ao.png",
+    "normal":"./assets/textures/worn-shiny-metal-ue/worn-shiny-metal-Normal-dx.png",
+    "height":"./assets/textures/worn-shiny-metal-ue/worn-shiny-metal-Height.png",
+    "mra":"./assets/textures/worn-shiny-metal-ue/mra.png",
+    "nh":"./assets/textures/worn-shiny-metal-ue/nh.png"
 }
