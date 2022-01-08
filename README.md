@@ -7,10 +7,9 @@
 - Phong Model
 - Normal Map
 - Directional, Point and Spot Lights
-- PBR
+- PBR with IBL
 
 #### TODO
-- IBL
 - Cluster Based Forward+
 - PCF Shadow
 - SSR

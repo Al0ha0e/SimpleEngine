@@ -263,6 +263,7 @@ namespace builtin_materials
         virtual void UnserializeJSON(std::string s, resources::ResourceManager *manager)
         {
             auto j = nlohmann::json::parse(s);
+            render_mode = j["render_mode"].get<unsigned int>();
             std::string shaderpth = j["shader"].get<std::string>();
             shader = manager->LoadMeta<common::ShaderProgram>(shaderpth);
             glUseProgram(shader->shader);

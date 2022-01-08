@@ -267,7 +267,10 @@ namespace common
 
     struct Material
     {
-        Material() {}
+        Material()
+        {
+            material_id = render_mode = 0;
+        }
         Material(std::shared_ptr<ShaderProgram> shader, unsigned int material_id) : shader(shader), material_id(material_id) {}
 
         virtual void PrepareForDraw()
@@ -279,6 +282,7 @@ namespace common
 
         std::shared_ptr<ShaderProgram> shader;
         unsigned int material_id;
+        unsigned int render_mode;
     };
 
     //TODO layout description
@@ -290,10 +294,20 @@ namespace common
         float uv[2];
     };
 
-    struct ModelMesh
+    struct ModelMesh : public resources::SerializableObject
     {
         ModelMesh() {}
         ModelMesh(std::string pth)
+        {
+            init(pth);
+        }
+
+        virtual void Load(std::string pth)
+        {
+            init(pth);
+        }
+
+        void init(std::string pth)
         {
             v_count = id_count = 0;
             std::ifstream f(pth);

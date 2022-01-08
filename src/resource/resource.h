@@ -16,6 +16,7 @@ namespace resources
     public:
         virtual std::string SerializeJSON() { return ""; }
         virtual void UnserializeJSON(std::string s, ResourceManager *manager) {}
+        virtual void UnserializeJSON(nlohmann::json &j, ResourceManager *manager) {}
         virtual std::string SerializeBinary() { return ""; }
         virtual void UnserializeBinary(std::string s) {}
         virtual void Load(std::string pth) {}
