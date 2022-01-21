@@ -21,6 +21,7 @@
 
 #include "json.hpp"
 #include "../resource/resource.h"
+#include "ds.h"
 
 namespace common
 {
@@ -420,6 +421,7 @@ namespace common
         unsigned int vao;
         unsigned int vbo;
         unsigned int ebo;
+        BoundingBox box;
     };
 
 }

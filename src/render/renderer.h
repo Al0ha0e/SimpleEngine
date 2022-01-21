@@ -7,6 +7,7 @@
 
 #include "../common/common.h"
 #include "skybox.h"
+#include "render_queue.h"
 #include "../events/event.h"
 #include "light.h"
 
@@ -23,27 +24,6 @@ namespace renderer
         OPAQUE_SHADOW,
         TRANSPARENT,
         TRANSPARENT_SHADOW
-    };
-
-    struct RenderQueueItem
-    {
-        std::shared_ptr<common::Material> material;
-        std::shared_ptr<common::ModelMesh> mesh;
-        std::shared_ptr<common::RenderArguments> args;
-        unsigned int vertex_cnt;
-
-        virtual void Draw(unsigned int shader_id)
-        {
-            mesh->PrepareForDraw();
-            args->PrepareForDraw(shader_id);
-            glDrawElements(GL_TRIANGLES, vertex_cnt, GL_UNSIGNED_INT, 0);
-        }
-
-        RenderQueueItem() {}
-        RenderQueueItem(std::shared_ptr<common::Material> material,
-                        std::shared_ptr<common::ModelMesh> mesh,
-                        std::shared_ptr<common::RenderArguments> args,
-                        unsigned int vertex_cnt) : material(material), mesh(mesh), args(args), vertex_cnt(vertex_cnt) {}
     };
 
     typedef unsigned long long render_id;
