@@ -3,16 +3,24 @@
 
 #include "../common/common.h"
 #include "light.h"
+#include <list>
 
 namespace renderer
 {
 
+    typedef unsigned int render_id;
+    struct RenderQueueItem;
+
+    typedef std::list<std::shared_ptr<RenderQueueItem>> RenderItemList;
+
     struct RenderQueueItem
     {
+        render_id id;
         std::shared_ptr<common::Material> material;
         std::shared_ptr<common::ModelMesh> mesh;
         std::shared_ptr<common::RenderArguments> args;
         unsigned int vertex_cnt;
+        RenderItemList::iterator list_it;
 
         virtual void Draw(unsigned int shader_id)
         {
@@ -22,13 +30,12 @@ namespace renderer
         }
 
         RenderQueueItem() {}
-        RenderQueueItem(std::shared_ptr<common::Material> material,
+        RenderQueueItem(unsigned int id,
+                        std::shared_ptr<common::Material> material,
                         std::shared_ptr<common::ModelMesh> mesh,
                         std::shared_ptr<common::RenderArguments> args,
-                        unsigned int vertex_cnt) : material(material), mesh(mesh), args(args), vertex_cnt(vertex_cnt) {}
+                        unsigned int vertex_cnt) : id(id), material(material), mesh(mesh), args(args), vertex_cnt(vertex_cnt) {}
     };
-
-    typedef std::vector<RenderQueueItem> RenderItemList;
 
     struct OctItem
     {
@@ -36,22 +43,48 @@ namespace renderer
         std::vector<std::shared_ptr<LightParameters>> lights;
     };
 
-    struct OctTag
+    struct EmptyTag
+    {
+    };
+
+    struct LightTag
     {
         std::vector<std::shared_ptr<LightParameters>> lights;
         std::vector<int> del_lights;
     };
 
-    struct EmptyTag
-    {
-    };
+    typedef common::OctNode<LightTag, OctItem> node_with_light;
+    typedef common::OctNode<EmptyTag, RenderItemList> node_without_light;
 
     class RenderLayer
     {
     public:
-        common::OctNode<OctTag, OctItem> opaque_queue;
-        common::OctNode<EmptyTag, RenderItemList> shadow_queue;
-        common::OctNode<OctTag, OctItem> transparent_queue;
+        std::shared_ptr<node_with_light> opaque_queue;
+        std::shared_ptr<node_with_light> transparent_queue;
+        std::shared_ptr<node_without_light> shadow_queue;
+
+        void InsertObjectToOpaqueQueue()
+        {
+        }
+        void InsertToShadowQueue()
+        {
+        }
+        void InsertToTransparentQueue()
+        {
+        }
+
+    private:
+        void insert_obj(std::shared_ptr<node_with_light> now, std::shared_ptr<RenderQueueItem> &item, int depth);
+        void insert_obj_to_node(RenderItemList &objs, std::shared_ptr<RenderQueueItem> &item)
+        {
+            objs.push_back(item);
+            item->list_it = objs.end();
+            item->list_it--;
+        }
+        void push_tag(std::shared_ptr<node_with_light> now)
+        {
+            //TODO
+        }
     };
 }
 

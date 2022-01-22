@@ -258,6 +258,7 @@ namespace common
         RenderArguments(glm::mat4 model) : model(model) {}
 
         glm::mat4 model;
+        BoundingBox box;
 
         virtual void PrepareForDraw(unsigned int shader_id)
         {
@@ -344,6 +345,7 @@ namespace common
 
             for (int i = 0; i < indices.size() / 3; i++)
             {
+                //TODO: genbox
                 VertexProperties &v1 = vertices[indices[i * 3]];
                 VertexProperties &v2 = vertices[indices[i * 3 + 1]];
                 VertexProperties &v3 = vertices[indices[i * 3 + 2]];

@@ -5,6 +5,7 @@
 #include "../render/renderer.h"
 #include "materials.h"
 #include <memory>
+#include <algorithm>
 
 namespace common
 {
@@ -208,13 +209,13 @@ namespace builtin_components
 
         virtual void OnTransformed(common::TransformParameter &param)
         {
-            args->model = param.model;
+            updateRenderParam(param.model);
         }
 
         virtual void OnStart()
         {
             auto locked_object = object.lock();
-            args->model = locked_object->GetTransformInfo()->model;
+            updateRenderParam(locked_object->GetTransformInfo()->model);
             render_id = locked_object->rd->GetRenderID(renderer::OPAQUE);
             renderer::RenderQueueItem item(material, mesh, args, mesh->id_count);
             locked_object->rd->InsertToQueue(render_id, item, renderer::OPAQUE);
@@ -242,6 +243,19 @@ namespace builtin_components
         std::string material_pth;
         std::string mesh_pth;
         int render_id;
+
+        void updateRenderParam(glm::mat4 &model)
+        {
+            args->model = model;
+            common::BoundingBox &mbox = mesh->box;
+            common::BoundingBox &box = args->box;
+
+            glm::vec3 tmin = model * glm::vec4(mbox.min, 1);
+            glm::vec3 tmax = model * glm::vec4(mbox.max, 1);
+            glm::vec3 nmin(std::min(tmin.x, tmax.x), std::min(tmin.y, tmax.y), std::min(tmin.y, tmax.y));
+            glm::vec3 nmax(std::max(tmin.x, tmax.x), std::max(tmin.y, tmax.y), std::max(tmin.y, tmax.y));
+            box = common::BoundingBox(nmin, nmax, 1.1f);
+        }
     };
 
     class Camera : public common::EventListener, public common::Component

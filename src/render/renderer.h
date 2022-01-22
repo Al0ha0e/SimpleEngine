@@ -26,8 +26,6 @@ namespace renderer
         TRANSPARENT_SHADOW
     };
 
-    typedef unsigned long long render_id;
-
     struct RenderQueue
     {
         std::map<render_id, RenderQueueItem> queue;
