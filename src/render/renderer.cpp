@@ -25,8 +25,6 @@ namespace renderer
             return opaque_shadow_queue.GetRenderID();
         case TRANSPARENT:
             return transparent_queue.GetRenderID();
-        case TRANSPARENT_SHADOW:
-            return transparent_shadow_queue.GetRenderID();
         default:
             return 0;
         }
@@ -42,8 +40,6 @@ namespace renderer
             return opaque_shadow_queue.GetMaterialID();
         case TRANSPARENT:
             return transparent_queue.GetMaterialID();
-        case TRANSPARENT_SHADOW:
-            return transparent_shadow_queue.GetMaterialID();
         default:
             return 0;
         }
@@ -61,9 +57,6 @@ namespace renderer
             break;
         case TRANSPARENT:
             transparent_queue.RegisterMaterial(id, material);
-            break;
-        case TRANSPARENT_SHADOW:
-            transparent_shadow_queue.RegisterMaterial(id, material);
             break;
         default:
             break;
@@ -83,9 +76,6 @@ namespace renderer
         case TRANSPARENT:
             transparent_queue.InsertItem(id, item);
             break;
-        case TRANSPARENT_SHADOW:
-            transparent_shadow_queue.InsertItem(id, item);
-            break;
         default:
             break;
         }
@@ -103,9 +93,6 @@ namespace renderer
             break;
         case TRANSPARENT:
             transparent_queue.RemoveItem(id);
-            break;
-        case TRANSPARENT_SHADOW:
-            transparent_shadow_queue.RemoveItem(id);
             break;
         default:
             break;

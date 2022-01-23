@@ -75,23 +75,35 @@ namespace common
         }
     };
 
+    //TODO memory management
     template <class Ttag, class Tcontent>
     struct OctNode
     {
-        std::shared_ptr<OctNode> subnodes[8];
+        unsigned int depth;
+        std::shared_ptr<OctNode<Ttag, Tcontent>> subnodes[8];
+        std::shared_ptr<OctNode<Ttag, Tcontent>> father;
         BoundingBox box;
         Ttag tag;
         Tcontent content;
 
-        OctNode() {}
-        OctNode(BoundingBox box) : box(box)
+        OctNode()
         {
             for (int i = 0; i < 8; i++)
                 subnodes[i] = nullptr;
+            father = nullptr;
+            depth = 0;
+        }
+        OctNode(BoundingBox box, unsigned int depth) : box(box), depth(depth)
+        {
+            for (int i = 0; i < 8; i++)
+                subnodes[i] = nullptr;
+            father = nullptr;
         }
 
         int SubNodeTest(BoundingBox &ano)
         {
+            if (box.Test(ano) == BOX_INV_INCLUDE)
+                return -1;
             glm::vec3 &min = ano.min;
             glm::vec3 &max = ano.max;
             int idx = 0;
@@ -160,8 +172,11 @@ namespace common
                 for (int j = 0; j < 2; j++)
                     for (int k = 0; k < 2; k++)
                         subnodes[(i << 2) | (j << 1) | k] = std::make_shared<OctNode<Ttag, Tcontent>>(
-                            BoundingBox(glm::vec3(x[i], y[j], z[k]), glm::vec3(x[i + 1], y[j + 1], z[k + 1]), f));
+                            BoundingBox(glm::vec3(x[i], y[j], z[k]), glm::vec3(x[i + 1], y[j + 1], z[k + 1]), f),
+                            depth + 1);
         }
+
+        void Dispose() {}
     };
 }
 

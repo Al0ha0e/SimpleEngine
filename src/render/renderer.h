@@ -18,13 +18,6 @@
 
 namespace renderer
 {
-    enum RenderMode
-    {
-        OPAQUE,
-        OPAQUE_SHADOW,
-        TRANSPARENT,
-        TRANSPARENT_SHADOW
-    };
 
     struct RenderQueue
     {
@@ -131,7 +124,6 @@ namespace renderer
         RenderQueue opaque_queue;
         RenderQueue transparent_queue;
         RenderQueue opaque_shadow_queue;
-        RenderQueue transparent_shadow_queue;
         LightManager light_manager;
         glm::mat4 view;
         glm::mat4 projection;
