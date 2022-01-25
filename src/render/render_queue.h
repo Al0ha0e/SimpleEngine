@@ -14,11 +14,18 @@ namespace renderer
         OPAQUE_SHADOW,
         TRANSPARENT
     };
+
+    struct LightInRenderQueue
+    {
+        std::shared_ptr<LightParameters> param;
+        float impact;
+    };
+
     typedef unsigned int render_id;
     struct RenderQueueItem;
 
     typedef std::list<std::shared_ptr<RenderQueueItem>> RenderItemList;
-    typedef std::list<std::shared_ptr<LightParameters>> LightList;
+    typedef std::list<LightInRenderQueue> LightList;
 
     struct OctItem
     {
@@ -62,7 +69,6 @@ namespace renderer
         std::shared_ptr<common::ModelMesh> mesh;
         std::shared_ptr<common::RenderArguments> args;
         unsigned int vertex_cnt;
-        std::shared_ptr<RenderQueueIndex> index;
 
         virtual void Draw(unsigned int shader_id)
         {
@@ -76,7 +82,6 @@ namespace renderer
             material = nullptr;
             mesh = nullptr;
             args = nullptr;
-            index = nullptr;
         }
         RenderQueueItem(unsigned int id,
                         std::shared_ptr<common::Material> material,
@@ -88,34 +93,34 @@ namespace renderer
     class RenderLayer
     {
     public:
-        std::shared_ptr<render_queue_node> render_queue;
-        std::shared_ptr<RenderQueueIndex> InsertObject(RenderMode mode, std::shared_ptr<RenderQueueItem> &item)
+        void InsertObject(RenderMode mode, std::shared_ptr<RenderQueueItem> &item)
         {
-            return insert_obj(render_queue, mode, item);
+            object_index[item->id] = insert_obj(render_queue, mode, item);
         }
 
-        void RemoveObject(std::shared_ptr<RenderQueueIndex> &index, render_id id);
-        std::shared_ptr<RenderQueueIndex> UpdateObject(std::shared_ptr<RenderQueueIndex> &index, render_id id);
+        void RemoveObject(render_id id);
+        void UpdateObject(render_id id);
 
     private:
+        std::shared_ptr<render_queue_node> render_queue;
+        std::map<render_id, std::shared_ptr<RenderQueueIndex>> object_index;
+
         std::shared_ptr<RenderQueueIndex> insert_obj(std::shared_ptr<render_queue_node> &now, RenderMode mode, std::shared_ptr<RenderQueueItem> &item);
-        std::shared_ptr<RenderQueueIndex> insert_obj_to_node(std::shared_ptr<render_queue_node> &now, RenderMode mode, std::shared_ptr<RenderQueueItem> &item)
+
+        std::shared_ptr<RenderQueueIndex> insert_obj_to_node(
+            std::shared_ptr<render_queue_node> &now,
+            RenderMode mode,
+            std::shared_ptr<RenderQueueItem> &item,
+            std::shared_ptr<RenderQueueIndex> &idx)
         {
             now->content.objects[mode].push_back(item);
             for (auto &nd = now; nd != nullptr; nd = nd->father)
                 ++nd->content.subtree_objcnt;
-            if (item->index == nullptr)
-            {
-                auto ret = std::make_shared<RenderQueueIndex>(now, mode, now->content.objects[mode].end());
-                ret->it--;
-                item->index = ret;
-                return ret;
-            }
-            auto &idx = item->index;
             idx->node = now;
+            idx->mode = mode;
             idx->it = now->content.objects[mode].end();
             idx->it--;
-            return item->index;
+            return idx;
         }
 
         void split_node(std::shared_ptr<render_queue_node> &now)

@@ -8,8 +8,9 @@ namespace renderer
     {
         auto &box = item->args->box;
         auto &objs = now->content.objects[mode];
+        auto idx = std::make_shared<RenderQueueIndex>();
         if (now->depth >= max_octlayer)
-            return insert_obj_to_node(now, mode, item);
+            return insert_obj_to_node(now, mode, item, idx);
         push_tag(*now);
         int subnode = now->SubNodeTest(box);
 
@@ -19,17 +20,22 @@ namespace renderer
                 split_node(now);
             return insert_obj(now->subnodes[subnode], mode, item);
         }
-        return insert_obj_to_node(now, mode, item);
+        return insert_obj_to_node(now, mode, item, idx);
     }
 
-    void RenderLayer::RemoveObject(std::shared_ptr<RenderQueueIndex> &index, render_id id)
+    void RenderLayer::RemoveObject(render_id id)
     {
-        if ((*(index->it))->id != id)
+        auto it = object_index.find(id);
+        if (it == object_index.end())
             return;
+        auto &index = it->second;
+
         auto &now = index->node;
         push_tag(*now);
         auto &content = now->content;
         content.objects[index->mode].erase(index->it);
+        object_index.erase(it);
+
         std::shared_ptr<render_queue_node> combined = nullptr;
         for (auto &nd = now; nd != nullptr; nd = nd->father)
         {
@@ -45,27 +51,32 @@ namespace renderer
         }
     }
 
-    std::shared_ptr<RenderQueueIndex> RenderLayer::UpdateObject(std::shared_ptr<RenderQueueIndex> &index, render_id id)
+    void RenderLayer::UpdateObject(render_id id)
     {
+        auto it = object_index.find(id);
+        if (it == object_index.end())
+            return;
+        auto &index = it->second;
+
         auto &item = *(index->it);
-        if (item->id != id)
-            return index;
+
         auto &now = index->node;
         push_tag(*now);
         auto &box = item->args->box;
         if (now->box.LooseTest(box) == common::BOX_SEPARATE)
         {
-            RemoveObject(index, id);
-            return InsertObject(index->mode, item);
+            RemoveObject(id);
+            InsertObject(index->mode, item);
         }
         if (now->depth >= max_octlayer)
-            return index;
+            return;
         int subnode = now->SubNodeTest(box);
         if (subnode == -1)
-            return index;
+            return;
         if (now->subnodes[0] == nullptr)
             now->Split();
-        RemoveObject(index, id);
-        return insert_obj(now->subnodes[subnode], index->mode, item);
+        now->content.objects[index->mode].erase(index->it);
+        object_index.erase(it);
+        object_index[id] = insert_obj(now->subnodes[subnode], index->mode, item);
     }
 }
