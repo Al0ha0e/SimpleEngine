@@ -12,9 +12,11 @@
 #include <map>
 #include <memory>
 
+#include "../common/ds.h"
+
 namespace renderer
 {
-    typedef unsigned long long light_id;
+    typedef unsigned int light_id;
     const light_id max_directional_light = 8;
     const light_id max_point_light = 512;
     const light_id max_spot_light = 512;
@@ -39,9 +41,18 @@ namespace renderer
             : position(position), color(color), direction(direction) {}
     };
 
+    enum LightBoxRelation
+    {
+        LB_INCLUDE,
+        LB_INV_INCLUDE,
+        LB_INTERSECT,
+        LB_SEPARATE
+    };
+
     struct LightParameters
     {
-        unsigned int index;
+        light_id id;
+        light_id index;
         LightType tp;
         bool cast_shadow;
         InnerLightParameters inner_params;
@@ -51,6 +62,13 @@ namespace renderer
                         bool cast_shadow,
                         InnerLightParameters inner_params)
             : tp(tp), cast_shadow(cast_shadow), inner_params(inner_params) {}
+
+        LightBoxRelation Test(const common::BoundingBox &box)
+        {
+            return LB_SEPARATE;
+        }
+
+        float GetImpact(const common::BoundingBox &box) { return 0; }
     };
 
     class LightManager
@@ -85,9 +103,10 @@ namespace renderer
             case POINT_LIGHT:
                 if (pointlight_cnt == max_point_light)
                     return 0;
+                light->id = ret;
                 light->index = pointlight_cnt;
                 lights.insert(std::pair<light_id, std::shared_ptr<LightParameters>>(ret, light));
-                inv_point_id.insert(std::pair<unsigned int, light_id>(pointlight_cnt, ret));
+                inv_point_id.insert(std::pair<light_id, light_id>(pointlight_cnt, ret));
                 glBindBuffer(GL_UNIFORM_BUFFER, ubo_pointlights);
                 send_lightdata(pointlight_cnt * 3 * sizeof(glm::vec4), light->inner_params);
                 glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -96,9 +115,10 @@ namespace renderer
             case SPOT_LIGHT:
                 if (spotlight_cnt == max_spot_light)
                     return 0;
+                light->id = ret;
                 light->index = spotlight_cnt;
                 lights.insert(std::pair<light_id, std::shared_ptr<LightParameters>>(ret, light));
-                inv_spot_id.insert(std::pair<unsigned int, light_id>(spotlight_cnt, ret));
+                inv_spot_id.insert(std::pair<light_id, light_id>(spotlight_cnt, ret));
                 glBindBuffer(GL_UNIFORM_BUFFER, ubo_spotlights);
                 send_lightdata(spotlight_cnt * 3 * sizeof(glm::vec4), light->inner_params);
                 glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -107,9 +127,10 @@ namespace renderer
             case DIRECTIONAL_LIGHT:
                 if (directional_cnt == max_directional_light)
                     return 0;
+                light->id = ret;
                 light->index = directional_cnt;
                 lights.insert(std::pair<light_id, std::shared_ptr<LightParameters>>(ret, light));
-                inv_directional_id.insert(std::pair<unsigned int, light_id>(directional_cnt, ret));
+                inv_directional_id.insert(std::pair<light_id, light_id>(directional_cnt, ret));
                 glBindBuffer(GL_UNIFORM_BUFFER, ubo_directionals);
                 send_lightdata(directional_cnt * 3 * sizeof(glm::vec4), light->inner_params);
                 glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -145,52 +166,58 @@ namespace renderer
         void RemoveItem(light_id id)
         {
             auto &param = lights.find(id)->second;
-            unsigned int idx;
+            light_id idx;
             switch (param->tp)
             {
             case POINT_LIGHT:
-                idx = inv_point_id[pointlight_cnt - 1];
-                inv_point_id.erase(pointlight_cnt - 1);
+                pointlight_cnt--;
+                if (!pointlight_cnt)
+                    break;
+                idx = inv_point_id[pointlight_cnt];
+                inv_point_id.erase(pointlight_cnt);
                 inv_point_id[param->index] = idx;
                 lights[idx]->index = param->index;
                 glBindBuffer(GL_UNIFORM_BUFFER, ubo_pointlights);
                 send_lightdata(param->index * 3 * sizeof(glm::vec4), lights[idx]->inner_params);
                 glBindBuffer(GL_UNIFORM_BUFFER, 0);
-                pointlight_cnt--;
                 break;
             case SPOT_LIGHT:
-                idx = inv_spot_id.find(spotlight_cnt - 1)->second;
-                inv_spot_id.erase(spotlight_cnt - 1);
+                spotlight_cnt--;
+                if (!spotlight_cnt)
+                    break;
+                idx = inv_spot_id.find(spotlight_cnt)->second;
+                inv_spot_id.erase(spotlight_cnt);
                 inv_spot_id[param->index] = idx;
                 lights[idx]->index = param->index;
                 glBindBuffer(GL_UNIFORM_BUFFER, ubo_spotlights);
                 send_lightdata(param->index * 3 * sizeof(glm::vec4), lights[idx]->inner_params);
                 glBindBuffer(GL_UNIFORM_BUFFER, 0);
-                spotlight_cnt--;
                 break;
             case DIRECTIONAL_LIGHT:
-                idx = inv_directional_id.find(directional_cnt - 1)->second;
-                inv_directional_id.erase(directional_cnt - 1);
+                directional_cnt--;
+                if (!directional_cnt)
+                    break;
+                idx = inv_directional_id.find(directional_cnt)->second;
+                inv_directional_id.erase(directional_cnt);
                 inv_directional_id[param->index] = idx;
                 lights[idx]->index = param->index;
                 glBindBuffer(GL_UNIFORM_BUFFER, ubo_directionals);
                 send_lightdata(param->index * 3 * sizeof(glm::vec4), lights[idx]->inner_params);
                 glBindBuffer(GL_UNIFORM_BUFFER, 0);
-                directional_cnt--;
                 break;
             }
             lights.erase(id);
         }
 
     private:
-        unsigned int pointlight_cnt;
-        unsigned int spotlight_cnt;
-        unsigned int directional_cnt;
+        light_id pointlight_cnt;
+        light_id spotlight_cnt;
+        light_id directional_cnt;
         light_id maxid;
         std::map<light_id, std::shared_ptr<LightParameters>> lights;
-        std::map<unsigned int, light_id> inv_point_id;
-        std::map<unsigned int, light_id> inv_spot_id;
-        std::map<unsigned int, light_id> inv_directional_id;
+        std::map<light_id, light_id> inv_point_id;
+        std::map<light_id, light_id> inv_spot_id;
+        std::map<light_id, light_id> inv_directional_id;
         unsigned int ubo_pointlights;
         unsigned int ubo_spotlights;
         unsigned int ubo_directionals;
