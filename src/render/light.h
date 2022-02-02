@@ -44,7 +44,6 @@ namespace renderer
     enum LightBoxRelation
     {
         LB_INCLUDE,
-        LB_INV_INCLUDE,
         LB_INTERSECT,
         LB_SEPARATE
     };
@@ -63,12 +62,46 @@ namespace renderer
                         InnerLightParameters inner_params)
             : tp(tp), cast_shadow(cast_shadow), inner_params(inner_params) {}
 
-        LightBoxRelation Test(const common::BoundingBox &box)
+        LightBoxRelation Test(const common::BoundingBox &box, float &impact)
         {
-            return LB_SEPARATE;
-        }
+            bool hasin = false;
+            bool hasout = false;
+            glm::vec3 pos;
+            glm::vec3 center = inner_params.position;
+            glm::vec3 dir = inner_params.direction;
+            float cutoff = inner_params.direction.w;
+            float intensity = inner_params.position.w *
+                              glm::length(glm::vec3(inner_params.color));
+            impact = 0;
+            float spimpact;
 
-        float GetImpact(const common::BoundingBox &box) { return 0; }
+            for (int i = 0; i < 8; i++)
+            {
+                pos.x = i & 1 ? box.min.x : box.max.x;
+                pos.y = (i >> 1) & 1 ? box.min.y : box.max.y;
+                pos.z = (i >> 2) & 1 ? box.min.z : box.max.z;
+                float dist = glm::distance(pos, center);
+                float attenuation = 1.0 / (1 + 0.14 * dist + 0.07 * dist * dist);
+                if (tp == POINT_LIGHT)
+                {
+                    spimpact = attenuation * intensity;
+                    spimpact > 0.1 ? hasin = true : hasout = true;
+                    impact += spimpact;
+                }
+                else
+                {
+                    float dirdet = glm::dot(
+                        glm::normalize(center - pos),
+                        glm::normalize(-dir));
+                    float diratten = 1 - glm::clamp((cutoff - dirdet) / (0.2f * cutoff), 0.0f, 1.0f);
+                    spimpact = diratten * attenuation * intensity;
+                    spimpact > 0.1 ? hasin = true : hasout = true;
+                    impact += spimpact;
+                }
+            }
+            impact /= 8;
+            return hasin ? (hasout ? LB_INTERSECT : LB_INCLUDE) : LB_SEPARATE;
+        }
     };
 
     class LightManager

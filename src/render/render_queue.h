@@ -17,14 +17,21 @@ namespace renderer
 
     struct RenderQueueLightItem
     {
+        enum light_pos
+        {
+            LP_LAZY,
+            LP_FULL,
+            LP_INTER
+        };
+
         std::shared_ptr<LightParameters> param;
         float impact;
-        bool inlazy;
+        light_pos pos;
 
         RenderQueueLightItem() {}
         RenderQueueLightItem(std::shared_ptr<LightParameters> param,
                              float impact,
-                             bool inlazy) : param(param), impact(impact), inlazy(inlazy) {}
+                             light_pos pos) : param(param), impact(impact), pos(pos) {}
     };
 
     typedef unsigned int render_id;
@@ -71,6 +78,11 @@ namespace renderer
         {
             subtree_objcnt = 0;
         }
+
+        ~OctItem()
+        {
+            //TODO
+        }
     };
 
     struct LightTag
@@ -115,18 +127,49 @@ namespace renderer
         void RemoveObject(render_id id);
         void UpdateObject(render_id id);
 
-        void InsertLight(RenderMode mode, std::shared_ptr<LightParameters> &light)
+        void InsertLight(std::shared_ptr<LightParameters> &light)
         {
             light_index[light->id] = RenderQueueLightIndex(light->tp);
             LightList list;
-            list.push_back(RenderQueueLightItem(light, 0, false));
+            list.push_back(RenderQueueLightItem(light, 0, RenderQueueLightItem::LP_FULL));
             apply_tag(render_queue, list, light->tp);
+        }
+
+        void RemoveLight(light_id id)
+        {
+            auto &index = light_index[id];
+            for (auto &it : index.index)
+            {
+                auto &item = it.second;
+                auto &node = it.first;
+                LightType tp = item->param->tp;
+                switch (item->pos)
+                {
+                case RenderQueueLightItem::LP_FULL:
+                    node->content.lights_inclue[tp].erase(item);
+                    break;
+                case RenderQueueLightItem::LP_INTER:
+                    node->content.lights_intersect[tp].erase(item);
+                    break;
+                case RenderQueueLightItem::LP_LAZY:
+                    node->tag.lights[tp].erase(item);
+                    break;
+                }
+            }
+            light_index.erase(id);
+        }
+
+        void UpdateLight(std::shared_ptr<LightParameters> &light)
+        {
+            RemoveLight(light->id);
+            InsertLight(light);
         }
 
     private:
         std::shared_ptr<render_queue_node> render_queue;
         std::map<render_id, RenderQueueIndex> object_index;
         std::map<light_id, RenderQueueLightIndex> light_index;
+        //TODO volatile light
 
         void insert_obj(std::shared_ptr<render_queue_node> &now, RenderMode mode, std::shared_ptr<RenderQueueItem> &item);
 
@@ -168,12 +211,16 @@ namespace renderer
                 now->subnodes[i] = nullptr;
         }
 
-        LightList::iterator insert_light_to_list(LightList &list, std::shared_ptr<LightParameters> &param, float impact, bool inlazy)
+        LightList::iterator insert_light_to_list(
+            LightList &list,
+            std::shared_ptr<LightParameters> &param,
+            float impact,
+            RenderQueueLightItem::light_pos pos)
         {
             auto it = list.begin();
             for (; it != list.end() && it->impact > impact; it++)
                 ;
-            return list.insert(it, RenderQueueLightItem(param, impact, inlazy));
+            return list.insert(it, RenderQueueLightItem(param, impact, pos));
         }
 
         void insert_light_to_index(light_id id, std::shared_ptr<render_queue_node> &now, LightList::iterator it)
@@ -186,21 +233,33 @@ namespace renderer
             for (auto &item : lights)
             {
                 auto &param = item.param;
-                auto rel = param->Test(now->box);
+                float impact;
+                auto rel = param->Test(now->box, impact);
                 if (rel == LB_SEPARATE)
                     continue;
-                float impact = param->GetImpact(now->box);
                 if (rel == LB_INCLUDE)
                 {
-                    auto it = insert_light_to_list(now->content.lights_inclue[tp], item.param, impact, false);
+                    auto it = insert_light_to_list(
+                        now->content.lights_inclue[tp],
+                        item.param,
+                        impact,
+                        RenderQueueLightItem::LP_FULL);
                     insert_light_to_index(param->id, now, it);
                     continue;
                 }
-                auto it = insert_light_to_list(now->content.lights_intersect[tp], item.param, impact, false);
+                auto it = insert_light_to_list(
+                    now->content.lights_intersect[tp],
+                    item.param,
+                    impact,
+                    RenderQueueLightItem::LP_INTER);
                 insert_light_to_index(param->id, now, it);
                 if (now->subnodes[0] != nullptr)
                 {
-                    auto it = insert_light_to_list(now->tag.lights[tp], item.param, impact, true);
+                    auto it = insert_light_to_list(
+                        now->tag.lights[tp],
+                        item.param,
+                        impact,
+                        RenderQueueLightItem::LP_LAZY);
                     insert_light_to_index(param->id, now, it);
                 }
             }
