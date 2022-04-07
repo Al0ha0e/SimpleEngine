@@ -18,6 +18,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <algorithm>
 
 #include "json.hpp"
 #include "../resource/resource.h"
@@ -32,7 +33,7 @@ namespace common
         COMPUTE_SHADER = GL_COMPUTE_SHADER
     };
 
-    //TODO layout description
+    // TODO layout description
     struct Shader
     {
         unsigned int shader;
@@ -287,7 +288,7 @@ namespace common
         unsigned int render_mode;
     };
 
-    //TODO layout description
+    // TODO layout description
     struct VertexProperties
     {
         float position[3];
@@ -342,10 +343,18 @@ namespace common
                 id_count++;
             }
             f.close();
+            box.max = glm::vec3(vertices[0].position[0], vertices[0].position[1], vertices[0].position[2]);
+            box.min = box.max;
+            for (int i = 0; i < vertices.size(); i++)
+                for (int j = 0; j < 3; j++)
+                {
+                    box.max[j] = std::max(box.max[j], vertices[i].position[j]);
+                    box.min[j] = std::min(box.min[j], vertices[i].position[j]);
+                }
 
             for (int i = 0; i < indices.size() / 3; i++)
             {
-                //TODO: genbox
+                // TODO: genbox
                 VertexProperties &v1 = vertices[indices[i * 3]];
                 VertexProperties &v2 = vertices[indices[i * 3 + 1]];
                 VertexProperties &v3 = vertices[indices[i * 3 + 2]];

@@ -43,14 +43,14 @@ public:
         {
         case GLFW_KEY_W:
             object->TranslateLocal(glm::vec3(0, 0, -moveSpeed));
-            //object->TranslateLocal(glm::vec3(0, moveSpeed, 0));
+            // object->TranslateLocal(glm::vec3(0, moveSpeed, 0));
             break;
         case GLFW_KEY_A:
             object->TranslateLocal(glm::vec3(-moveSpeed, 0, 0));
             break;
         case GLFW_KEY_S:
             object->TranslateLocal(glm::vec3(0, 0, moveSpeed));
-            //object->TranslateLocal(glm::vec3(0, -moveSpeed, 0));
+            // object->TranslateLocal(glm::vec3(0, -moveSpeed, 0));
             break;
         case GLFW_KEY_D:
             object->TranslateLocal(glm::vec3(moveSpeed, 0, 0));
@@ -243,10 +243,10 @@ int main()
     // SaveScene(scene,"./assets/scene/scene.json");
 
     TestController controller(scene->objects[3], camSpeed, 0.0005f);
-    //TestController controller(object1, camSpeed, 0.0005f);
-    //TestController controller(lightObject3, camSpeed, 0.0005f);
-    // render loop
-    // -----------
+    // TestController controller(object1, camSpeed, 0.0005f);
+    // TestController controller(lightObject3, camSpeed, 0.0005f);
+    //  render loop
+    //  -----------
     while (!glfwWindowShouldClose(window))
     {
         // input

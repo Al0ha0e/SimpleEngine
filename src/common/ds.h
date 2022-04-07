@@ -15,12 +15,10 @@ namespace common
         return a.x <= b.x && a.y <= b.y && a.z <= b.z;
     }
 
-    enum BoxRelation
+    struct Plane
     {
-        BOX_INCLUDE,
-        BOX_INV_INCLUDE,
-        BOX_INTERSECT,
-        BOX_SEPARATE
+        glm::vec3 pos;
+        glm::vec3 normal;
     };
 
     struct BoundingBox
@@ -30,6 +28,14 @@ namespace common
         glm::vec3 loose_min;
         glm::vec3 loose_max;
         float loose_factor;
+
+        enum box_relation
+        {
+            BOX_INCLUDE,
+            BOX_INV_INCLUDE,
+            BOX_INTERSECT,
+            BOX_SEPARATE
+        };
 
         BoundingBox() {}
 
@@ -44,7 +50,7 @@ namespace common
             lmax = min * 0.5f * (1 - l) + max * 0.5f * (1 + l); //(min + max) * 0.5f + (min + max) * 0.5f * l - min *l;
         }
 
-        BoxRelation Test(BoundingBox &ano)
+        box_relation Test(BoundingBox &ano)
         {
             glm::vec3 &min1 = ano.min;
             glm::vec3 &max1 = ano.max;
@@ -59,7 +65,7 @@ namespace common
             return BOX_INTERSECT;
         }
 
-        BoxRelation LooseTest(BoundingBox &ano)
+        box_relation LooseTest(BoundingBox &ano)
         {
             glm::vec3 &min1 = ano.min;
             glm::vec3 &max1 = ano.max;
@@ -75,7 +81,7 @@ namespace common
         }
     };
 
-    //TODO memory management
+    // TODO memory management
     template <class Ttag, class Tcontent>
     struct OctNode
     {
@@ -102,7 +108,7 @@ namespace common
 
         int SubNodeTest(BoundingBox &ano)
         {
-            if (box.Test(ano) == BOX_INV_INCLUDE)
+            if (box.Test(ano) == BoundingBox::BOX_INV_INCLUDE)
                 return -1;
             glm::vec3 &min = ano.min;
             glm::vec3 &max = ano.max;
@@ -112,7 +118,7 @@ namespace common
                 idx += max.x <= subnodes[0]->box.max.x ? 0 : 4;
                 idx += max.y <= subnodes[0]->box.max.y ? 0 : 2;
                 idx += max.z <= subnodes[0]->box.max.z ? 0 : 1;
-                if (subnodes[idx]->box.LooseTest(ano) == BOX_INCLUDE)
+                if (subnodes[idx]->box.LooseTest(ano) == BoundingBox::BOX_INCLUDE)
                     return idx;
                 return -1;
             }
@@ -155,7 +161,7 @@ namespace common
                 nmin.z = mid.z;
                 nmax.z = bmax.z;
             }
-            if (BoundingBox(nmin, nmax, box.loose_factor).LooseTest(ano) == BOX_INCLUDE)
+            if (BoundingBox(nmin, nmax, box.loose_factor).LooseTest(ano) == BoundingBox::BOX_INCLUDE)
                 return idx;
             return -1;
         }

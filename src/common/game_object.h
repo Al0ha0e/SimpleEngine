@@ -61,11 +61,20 @@ namespace common
     class GameObject : public resources::SerializableObject
     {
     public:
-        GameObject() {}
+        GameObject()
+        {
+            id = ++object_cnt;
+        }
         ~GameObject() {}
-        GameObject(std::shared_ptr<renderer::Renderer> rd) : rd(rd) {}
+        GameObject(std::shared_ptr<renderer::Renderer> rd) : rd(rd)
+        {
+            id = ++object_cnt;
+        }
         GameObject(std::shared_ptr<TransformParameter> tparam,
-                   std::shared_ptr<renderer::Renderer> rd) : tParam(tparam), rd(rd) {}
+                   std::shared_ptr<renderer::Renderer> rd) : tParam(tparam), rd(rd)
+        {
+            id = ++object_cnt;
+        }
 
         void AddComponent(std::shared_ptr<Component> component)
         {
@@ -159,13 +168,15 @@ namespace common
             UpdateTransform();
         }
         std::shared_ptr<renderer::Renderer> rd;
-        std::shared_ptr<GameObject> self; //TODO Manually release it
+        std::shared_ptr<GameObject> self; // TODO Manually release it
+        unsigned int id;
 
     protected:
         std::vector<std::shared_ptr<Component>> components;
         std::shared_ptr<TransformParameter> tParam;
 
     private:
+        static unsigned int object_cnt;
         void UpdateTransform()
         {
             tParam->model = tParam->translation * tParam->rotation;
@@ -198,13 +209,9 @@ namespace builtin_components
             material = manager->LoadMeta<builtin_materials::CustomMaterial>(material_pth);
             mesh = manager->Load<common::ModelMesh>(mesh_pth);
             args = std::make_shared<common::RenderArguments>();
-            if (!material->material_id)
-            {
-                auto locked_object = object.lock();
-                unsigned int id = locked_object->rd->GetMaterialID(renderer::RenderMode(material->render_mode));
-                material->material_id = id;
-                locked_object->rd->RegisterMaterial(id, material, renderer::RenderMode(material->render_mode));
-            }
+            item = std::make_shared<renderer::RenderQueueItem>(object.lock()->id, material, mesh, args, mesh->id_count);
+            // TODO
+            rd_idxs.push_back(renderer::RenderLayerIndex(0, true, false, false));
         }
 
         virtual void OnTransformed(common::TransformParameter &param)
@@ -216,9 +223,17 @@ namespace builtin_components
         {
             auto locked_object = object.lock();
             updateRenderParam(locked_object->GetTransformInfo()->model);
-            render_id = locked_object->rd->GetRenderID(renderer::OPAQUE);
-            renderer::RenderQueueItem item(material, mesh, args, mesh->id_count);
-            locked_object->rd->InsertToQueue(render_id, item, renderer::OPAQUE);
+
+            for (auto &idx : rd_idxs)
+            {
+                auto &layer = renderer::RenderLayerManager::GetInstance()->layers[idx.layer];
+                if (idx.in_opaque)
+                    layer.InsertObject(renderer::OPAQUE, item);
+                if (idx.in_transparent)
+                    layer.InsertObject(renderer::TRANSPARENT, item);
+                if (idx.in_shadow)
+                    layer.InsertObject(renderer::OPAQUE_SHADOW, item);
+            }
         }
 
         virtual void UnserializeJSON(nlohmann::json &j, std::shared_ptr<common::GameObject> obj, resources::ResourceManager *manager)
@@ -237,12 +252,13 @@ namespace builtin_components
         }
 
     private:
+        std::shared_ptr<renderer::RenderQueueItem> item;
         std::shared_ptr<common::Material> material;
         std::shared_ptr<common::ModelMesh> mesh;
         std::shared_ptr<common::RenderArguments> args;
         std::string material_pth;
         std::string mesh_pth;
-        int render_id;
+        std::vector<renderer::RenderLayerIndex> rd_idxs;
 
         void updateRenderParam(glm::mat4 &model)
         {
@@ -252,8 +268,8 @@ namespace builtin_components
 
             glm::vec3 tmin = model * glm::vec4(mbox.min, 1);
             glm::vec3 tmax = model * glm::vec4(mbox.max, 1);
-            glm::vec3 nmin(std::min(tmin.x, tmax.x), std::min(tmin.y, tmax.y), std::min(tmin.y, tmax.y));
-            glm::vec3 nmax(std::max(tmin.x, tmax.x), std::max(tmin.y, tmax.y), std::max(tmin.y, tmax.y));
+            glm::vec3 nmin(std::min(tmin.x, tmax.x), std::min(tmin.y, tmax.y), std::min(tmin.z, tmax.z));
+            glm::vec3 nmax(std::max(tmin.x, tmax.x), std::max(tmin.y, tmax.y), std::max(tmin.z, tmax.z));
             box = common::BoundingBox(nmin, nmax, 1.1f);
         }
     };
@@ -262,7 +278,6 @@ namespace builtin_components
     {
     public:
         glm::mat4 view;
-        glm::mat4 projection;
 
         Camera() {}
         ~Camera() {}
@@ -282,13 +297,13 @@ namespace builtin_components
             this->aspect = aspect;
             this->near = near;
             this->far = far;
-            this->projection = glm::perspective(fov, aspect, near, far);
             auto locked_object = object.lock();
             auto tparam = locked_object->GetTransformInfo();
             glm::vec3 gfront = tparam->rotation * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
             glm::vec3 gup = tparam->rotation * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
             view = glm::lookAt(tparam->pos, tparam->pos + gfront, gup);
-            locked_object->rd->UpdateVP(view, projection, tparam->pos);
+            locked_object->rd->UpdateView(view, tparam->pos);
+            locked_object->rd->UpdateProjection(fov, aspect, near, far);
             common::EventTransmitter::GetInstance()->SubscribeEvent(
                 common::EventType::EVENT_WINDOW_RESIZE,
                 std::static_pointer_cast<common::EventListener>(std::shared_ptr<Camera>(this)));
@@ -297,8 +312,8 @@ namespace builtin_components
         virtual void OnWindowResize(std::shared_ptr<common::ED_WindowResize> desc)
         {
             auto locked_object = object.lock();
-            projection = glm::perspective(glm::radians(45.0f), desc->width * 1.0f / desc->height, 0.1f, 100.0f);
-            locked_object->rd->UpdateVP(view, projection, locked_object->GetTransformInfo()->pos);
+            aspect = desc->width * 1.0f / desc->height;
+            locked_object->rd->UpdateProjection(fov, aspect, near, far);
         }
 
         virtual void OnTransformed(common::TransformParameter &param)
@@ -307,7 +322,7 @@ namespace builtin_components
             glm::vec3 gfront = param.rotation * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
             glm::vec3 gup = param.rotation * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
             view = glm::lookAt(param.pos, param.pos + gfront, gup);
-            locked_object->rd->UpdateVP(view, projection, locked_object->GetTransformInfo()->pos);
+            locked_object->rd->UpdateView(view, locked_object->GetTransformInfo()->pos);
         }
 
         virtual void UnserializeJSON(nlohmann::json &j, std::shared_ptr<common::GameObject> obj, resources::ResourceManager *manager)
@@ -355,7 +370,7 @@ namespace builtin_components
 
         virtual void OnStart()
         {
-            lid = object.lock()->rd->InsertLight(light_param);
+            lid = renderer::LightManager::GetInstance()->InsertItem(light_param);
         }
 
         virtual void OnTransformed(common::TransformParameter &param)
@@ -364,7 +379,7 @@ namespace builtin_components
             lparam.position = glm::vec4(param.pos, lparam.position.w);
             glm::vec3 dir = param.rotation * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
             lparam.direction = glm::vec4(dir, lparam.direction.w);
-            object.lock()->rd->UpdateLight(lid);
+            renderer::LightManager::GetInstance()->UpdateItem(lid);
         }
 
         virtual void UnserializeJSON(nlohmann::json &j, std::shared_ptr<common::GameObject> obj, resources::ResourceManager *manager)

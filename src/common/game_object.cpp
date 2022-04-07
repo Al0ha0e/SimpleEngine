@@ -2,6 +2,8 @@
 
 namespace common
 {
+    unsigned int GameObject::object_cnt = 0;
+
     std::shared_ptr<Component> UnserializeComponent(
         std::string tp,
         nlohmann::json &j,

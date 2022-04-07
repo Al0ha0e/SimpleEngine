@@ -11,27 +11,9 @@ namespace renderer
     enum RenderMode
     {
         OPAQUE,
-        OPAQUE_SHADOW,
-        TRANSPARENT
-    };
+        TRANSPARENT,
+        OPAQUE_SHADOW
 
-    struct RenderQueueLightItem
-    {
-        enum light_pos
-        {
-            LP_LAZY,
-            LP_FULL,
-            LP_INTER
-        };
-
-        std::shared_ptr<LightParameters> param;
-        float impact;
-        light_pos pos;
-
-        RenderQueueLightItem() {}
-        RenderQueueLightItem(std::shared_ptr<LightParameters> param,
-                             float impact,
-                             light_pos pos) : param(param), impact(impact), pos(pos) {}
     };
 
     typedef unsigned int render_id;
@@ -65,126 +47,115 @@ namespace renderer
     };
 
     typedef std::list<std::shared_ptr<RenderQueueItem>> ObjectList;
-    typedef std::list<RenderQueueLightItem> LightList;
+    typedef std::list<std::shared_ptr<LightParameters>> LightList;
 
     struct OctItem
     {
         int subtree_objcnt;
-        ObjectList objects[3];
-        LightList lights_inclue[2];
-        LightList lights_intersect[2];
+        ObjectList objects;
+        LightList lights[2];
 
         void init()
         {
             subtree_objcnt = 0;
         }
 
-        ~OctItem()
-        {
-            //TODO
-        }
+        ~OctItem() {}
     };
 
-    struct LightTag
+    struct EmptyTag
     {
-        LightList lights[2];
     };
 
-    typedef common::OctNode<LightTag, OctItem> render_queue_node;
+    typedef common::OctNode<EmptyTag, OctItem> render_queue_node;
 
     struct RenderQueueLightIndex
     {
-        LightType tp;
-        std::map<std::shared_ptr<render_queue_node>, LightList::iterator> index;
+        std::shared_ptr<render_queue_node> node;
+        LightList::iterator it;
         RenderQueueLightIndex() {}
-        RenderQueueLightIndex(LightType tp) : tp(tp) {}
     };
 
     struct RenderQueueIndex
     {
         std::shared_ptr<render_queue_node> node;
-        RenderMode mode;
         ObjectList::iterator it;
 
         RenderQueueIndex()
         {
             node = nullptr;
         }
+
         RenderQueueIndex(std::shared_ptr<render_queue_node> &node,
-                         RenderMode mode,
-                         ObjectList::iterator it) : node(node), mode(mode), it(it) {}
+                         ObjectList::iterator it) : node(node), it(it) {}
     };
 
     class RenderLayer
     {
     public:
-        void InsertObject(RenderMode mode, std::shared_ptr<RenderQueueItem> &item)
+        RenderLayer()
         {
-            object_index[item->id] = RenderQueueIndex();
-            insert_obj(render_queue, mode, item);
+            for (int i = 0; i < 3; i++)
+            {
+                // TODO
+                render_queue[i] = std::make_shared<render_queue_node>(
+                    common::BoundingBox(
+                        glm::vec3(-1000.0, -1000.0, -1000.0),
+                        glm::vec3(1000.0, 1000.0, 1000.0),
+                        1.0),
+                    0);
+                render_queue[i]->content.init();
+            }
         }
 
-        void RemoveObject(render_id id);
-        void UpdateObject(render_id id);
+        void InsertObject(RenderMode mode, std::shared_ptr<RenderQueueItem> &item)
+        {
+            object_index[mode][item->id] = RenderQueueIndex();
+            insert_obj(render_queue[mode], mode, item);
+        }
+
+        void RemoveObject(render_id id, RenderMode mode);
+        void UpdateObject(render_id id, RenderMode mode);
 
         void InsertLight(std::shared_ptr<LightParameters> &light)
         {
-            light_index[light->id] = RenderQueueLightIndex(light->tp);
-            LightList list;
-            list.push_back(RenderQueueLightItem(light, 0, RenderQueueLightItem::LP_FULL));
-            apply_tag(render_queue, list, light->tp);
         }
 
         void RemoveLight(light_id id)
         {
-            auto &index = light_index[id];
-            for (auto &it : index.index)
-            {
-                auto &item = it.second;
-                auto &node = it.first;
-                LightType tp = item->param->tp;
-                switch (item->pos)
-                {
-                case RenderQueueLightItem::LP_FULL:
-                    node->content.lights_inclue[tp].erase(item);
-                    break;
-                case RenderQueueLightItem::LP_INTER:
-                    node->content.lights_intersect[tp].erase(item);
-                    break;
-                case RenderQueueLightItem::LP_LAZY:
-                    node->tag.lights[tp].erase(item);
-                    break;
-                }
-            }
-            light_index.erase(id);
         }
 
         void UpdateLight(std::shared_ptr<LightParameters> &light)
         {
-            RemoveLight(light->id);
-            InsertLight(light);
+        }
+
+        std::shared_ptr<render_queue_node> GetQueue(RenderMode mode)
+        {
+            return render_queue[mode];
         }
 
     private:
-        std::shared_ptr<render_queue_node> render_queue;
-        std::map<render_id, RenderQueueIndex> object_index;
+        std::shared_ptr<render_queue_node> render_queue[3];
+        std::map<render_id, RenderQueueIndex> object_index[3];
         std::map<light_id, RenderQueueLightIndex> light_index;
-        //TODO volatile light
+        // TODO volatile light
 
         void insert_obj(std::shared_ptr<render_queue_node> &now, RenderMode mode, std::shared_ptr<RenderQueueItem> &item);
+
+        void insert_light(std::shared_ptr<render_queue_node> &now, std::shared_ptr<LightParameters> &light);
 
         void insert_obj_to_node(
             std::shared_ptr<render_queue_node> &now,
             RenderMode mode,
             std::shared_ptr<RenderQueueItem> &item)
         {
-            now->content.objects[mode].push_back(item);
-            for (auto &nd = now; nd != nullptr; nd = nd->father)
+            now->content.objects.push_back(item);
+            for (auto nd = now; nd != nullptr; nd = nd->father)
                 ++nd->content.subtree_objcnt;
-            auto &idx = object_index[item->id];
+
+            auto &idx = object_index[mode][item->id];
             idx.node = now;
-            idx.mode = mode;
-            idx.it = now->content.objects[mode].end();
+            idx.it = now->content.objects.end();
             idx.it--;
         }
 
@@ -196,86 +167,51 @@ namespace renderer
                 now->subnodes[i]->content.init();
                 now->subnodes[i]->father = now;
             }
-            for (int i = 0; i < 2; i++)
-            {
-                if (now->content.lights_intersect[i].size())
-                    for (auto &subnode : now->subnodes)
-                        apply_tag(subnode, now->content.lights_intersect[i], LightType(i));
-            }
-            push_tag(*now);
+            // TODO push light
+        }
+    };
+
+    struct RenderLayerIndex
+    {
+        unsigned char layer : 8;
+        bool in_opaque : 1;
+        bool in_shadow : 1;
+        bool in_transparent : 1;
+
+        RenderLayerIndex() {}
+        RenderLayerIndex(unsigned char layer,
+                         bool in_opaque,
+                         bool in_shadow,
+                         bool in_transparent)
+            : layer(layer),
+              in_opaque(in_opaque),
+              in_shadow(in_shadow),
+              in_transparent(in_transparent) {}
+    };
+
+    const int MAX_LAYER_NUM = 5;
+
+    class RenderLayerManager
+    {
+    private:
+        static RenderLayerManager *instance;
+
+        ~RenderLayerManager() {} // TODO
+        RenderLayerManager(const RenderLayerManager &);
+        RenderLayerManager &operator=(const RenderLayerManager &);
+        RenderLayerManager()
+        {
         }
 
-        void combine_node(std::shared_ptr<render_queue_node> &now)
+    public:
+        static RenderLayerManager *GetInstance()
         {
-            for (int i = 0; i < 8; i++)
-                now->subnodes[i] = nullptr;
+            if (instance == nullptr)
+                instance = new RenderLayerManager();
+            return instance;
         }
 
-        LightList::iterator insert_light_to_list(
-            LightList &list,
-            std::shared_ptr<LightParameters> &param,
-            float impact,
-            RenderQueueLightItem::light_pos pos)
-        {
-            auto it = list.begin();
-            for (; it != list.end() && it->impact > impact; it++)
-                ;
-            return list.insert(it, RenderQueueLightItem(param, impact, pos));
-        }
-
-        void insert_light_to_index(light_id id, std::shared_ptr<render_queue_node> &now, LightList::iterator it)
-        {
-            light_index[id].index[now] = it;
-        }
-
-        void apply_tag(std::shared_ptr<render_queue_node> &now, LightList &lights, LightType tp)
-        {
-            for (auto &item : lights)
-            {
-                auto &param = item.param;
-                float impact;
-                auto rel = param->Test(now->box, impact);
-                if (rel == LB_SEPARATE)
-                    continue;
-                if (rel == LB_INCLUDE)
-                {
-                    auto it = insert_light_to_list(
-                        now->content.lights_inclue[tp],
-                        item.param,
-                        impact,
-                        RenderQueueLightItem::LP_FULL);
-                    insert_light_to_index(param->id, now, it);
-                    continue;
-                }
-                auto it = insert_light_to_list(
-                    now->content.lights_intersect[tp],
-                    item.param,
-                    impact,
-                    RenderQueueLightItem::LP_INTER);
-                insert_light_to_index(param->id, now, it);
-                if (now->subnodes[0] != nullptr)
-                {
-                    auto it = insert_light_to_list(
-                        now->tag.lights[tp],
-                        item.param,
-                        impact,
-                        RenderQueueLightItem::LP_LAZY);
-                    insert_light_to_index(param->id, now, it);
-                }
-            }
-        }
-
-        void push_tag(render_queue_node &now)
-        {
-            if (now.subnodes[0] == nullptr)
-                return;
-            if (now.tag.lights[0].size())
-                for (auto &subnode : now.subnodes)
-                    apply_tag(subnode, now.tag.lights[0], POINT_LIGHT);
-            if (now.tag.lights[1].size())
-                for (auto &subnode : now.subnodes)
-                    apply_tag(subnode, now.tag.lights[1], SPOT_LIGHT);
-        }
+        RenderLayer layers[MAX_LAYER_NUM];
     };
 }
 
