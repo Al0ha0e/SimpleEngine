@@ -15,18 +15,25 @@ void processInput(GLFWwindow *window);
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
 
+float time_prev = 0;
+float time_delta = 0;
+
 class TestController : public common::EventListener
 {
 public:
     std::shared_ptr<common::GameObject> object;
     float moveSpeed;
     float rotateSpeed;
+    bool mouse;
+    unsigned int keys[4];
 
     TestController() {}
     TestController(std::shared_ptr<common::GameObject> object,
                    float moveSpeed,
-                   float rotateSpeed)
-        : object(object), moveSpeed(moveSpeed), rotateSpeed(rotateSpeed)
+                   float rotateSpeed,
+                   bool mouse,
+                   unsigned int *ks)
+        : object(object), moveSpeed(moveSpeed), rotateSpeed(rotateSpeed), mouse(mouse)
     {
         common::EventTransmitter::GetInstance()->SubscribeEvent(
             common::EventType::EVENT_KEYBOARD_PRESS,
@@ -35,37 +42,32 @@ public:
         common::EventTransmitter::GetInstance()->SubscribeEvent(
             common::EventType::EVENT_MOUSE_MOVEMENT,
             std::static_pointer_cast<common::EventListener>(std::shared_ptr<TestController>(this)));
+        for (int i = 0; i < 4; i++)
+            keys[i] = ks[i];
     }
 
     virtual void OnKeyBoardPress(std::shared_ptr<common::ED_KeyboardPress> desc)
     {
-        switch (desc->keycode)
-        {
-        case GLFW_KEY_W:
-            object->TranslateLocal(glm::vec3(0, 0, -moveSpeed));
-            // object->TranslateLocal(glm::vec3(0, moveSpeed, 0));
-            break;
-        case GLFW_KEY_A:
-            object->TranslateLocal(glm::vec3(-moveSpeed, 0, 0));
-            break;
-        case GLFW_KEY_S:
-            object->TranslateLocal(glm::vec3(0, 0, moveSpeed));
-            // object->TranslateLocal(glm::vec3(0, -moveSpeed, 0));
-            break;
-        case GLFW_KEY_D:
-            object->TranslateLocal(glm::vec3(moveSpeed, 0, 0));
-            break;
-        }
+        if (desc->keycode == keys[0])
+            object->TranslateLocal(glm::vec3(0, 0, -moveSpeed * time_delta));
+        else if (desc->keycode == keys[1])
+            object->TranslateLocal(glm::vec3(-moveSpeed * time_delta, 0, 0));
+        else if (desc->keycode == keys[2])
+            object->TranslateLocal(glm::vec3(0, 0, moveSpeed * time_delta));
+        else if (desc->keycode == keys[3])
+            object->TranslateLocal(glm::vec3(moveSpeed * time_delta, 0, 0));
     }
 
     virtual void OnMouseMove(std::shared_ptr<common::ED_MouseMovement> desc)
     {
+        if (!mouse)
+            return;
         float xoffset = desc->dx;
         float yoffset = desc->dy;
         xoffset *= rotateSpeed;
         yoffset *= rotateSpeed;
-        object->RotateGlobal(-xoffset, glm::vec3(0.0f, 1.0f, 0.0f));
-        object->RotateLocal(yoffset, glm::vec3(1.0f, 0.0f, 0.0f));
+        object->RotateGlobal(-xoffset * time_delta, glm::vec3(0.0f, 1.0f, 0.0f));
+        object->RotateLocal(yoffset * time_delta, glm::vec3(1.0f, 0.0f, 0.0f));
     }
 };
 
@@ -76,11 +78,12 @@ std::shared_ptr<common::GameObject> MakeCamera(
     float fov,
     float aspect,
     float near,
-    float far)
+    float far,
+    bool is_sub)
 {
     auto tpCam = std::make_shared<common::TransformParameter>(pos, dir);
     auto camObject = std::make_shared<common::GameObject>(tpCam, rder);
-    auto cam = std::make_shared<builtin_components::Camera>(camObject, fov, aspect, near, far);
+    auto cam = std::make_shared<builtin_components::Camera>(camObject, fov, aspect, near, far, is_sub);
     camObject->AddComponent(cam);
     return camObject;
 }
@@ -138,7 +141,8 @@ int main()
 
     // glfw window creation
     // --------------------
-    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SimpleEngine", glfwGetPrimaryMonitor(), NULL);
+    // GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SimpleEngine", glfwGetPrimaryMonitor(), NULL);
+    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SimpleEngine", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -158,22 +162,23 @@ int main()
         return -1;
     }
 
-    float camSpeed = 0.01;
+    float camSpeed = 4;
 
     auto rManager = resources::ResourceManager();
 
     auto skybox = rManager.LoadMeta<renderer::SkyBox>("./assets/skybox/skybox.json");
 
     auto rder = std::make_shared<renderer::Renderer>(glm::vec4(0.3f, 0.3f, 0.3f, 0.0f), skybox);
-    auto scene = LoadScene(rder, &rManager, "./assets/scene/scene.json");
-    scene->OnStart();
+    // auto scene = LoadScene(rder, &rManager, "./assets/scene/scene.json");
+    // scene->OnStart();
+    auto scene = std::make_shared<common::Scene>(rder);
 
-    // auto lightObject1 = MakeLight(rder, renderer::DIRECTIONAL_LIGHT,
-    //                               glm::vec3(), glm::vec3(glm::radians(90.0f), 0.0f, 0.0f),
-    //                               glm::vec3(1.0f, 1.0f, 0.7f),
-    //                               2.7f, 0.0f);
+    auto lightObject1 = MakeLight(rder, renderer::DIRECTIONAL_LIGHT,
+                                  glm::vec3(), glm::vec3(glm::radians(45.0f), 0.0f, 0.0f),
+                                  glm::vec3(1.0f, 1.0f, 0.7f),
+                                  2.7f, 0.0f);
     // lightObject1->OnStart();
-    // scene.objects.push_back(lightObject1);
+    scene->objects.push_back(lightObject1);
 
     // auto lightObject2 = MakeLight(rder, renderer::SPOT_LIGHT,
     //                               glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(glm::radians(150.0f), 0.0f, 0.0f),
@@ -189,16 +194,29 @@ int main()
     // lightObject3->OnStart();
     // scene.objects.push_back(lightObject3);
 
-    // auto camObject = MakeCamera(
-    //     rder,
-    //     glm::vec3(0.0f, 0.0f, 2.0f),
-    //     glm::vec3(),
-    //     glm::radians(45.0f),
-    //     SCR_WIDTH * 1.0f / SCR_HEIGHT,
-    //     0.1f,
-    //     100.0f);
+    auto camObject = MakeCamera(
+        rder,
+        glm::vec3(0.0f, 0.0f, 2.0f),
+        glm::vec3(),
+        glm::radians(45.0f),
+        SCR_WIDTH * 1.0f / SCR_HEIGHT,
+        0.1f,
+        100.0f,
+        false);
     // camObject->OnStart();
-    // scene.objects.push_back(camObject);
+    scene->objects.push_back(camObject);
+
+    auto camObject2 = MakeCamera(
+        rder,
+        glm::vec3(0.0f, 0.0f, 2.0f),
+        glm::vec3(),
+        glm::radians(20.0f),
+        SCR_WIDTH * 1.0f / SCR_HEIGHT,
+        0.1f,
+        100.0f,
+        true);
+    // camObject->OnStart();
+    scene->objects.push_back(camObject2);
 
     // auto tp = std::make_shared<common::TransformParameter>(glm::vec3(), glm::vec3());
     // auto tp1 = std::make_shared<common::TransformParameter>(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3());
@@ -239,16 +257,57 @@ int main()
     // object1->AddComponent(render_component1);
     // object1->OnStart();
     // scene.objects.push_back(object1);
+    const int cnt = 8;
+    std::shared_ptr<common::GameObject> objects[cnt][cnt][cnt];
+    for (int i = 0; i < cnt; i++)
+    {
+        for (int j = 0; j < cnt; j++)
+        {
+            for (int k = 0; k < cnt; k++)
+            {
+                auto tp = std::make_shared<common::TransformParameter>(glm::vec3(i * 4 - 2 * cnt + 2, j * 4 - 2 * cnt + 2, k * 4 - 2 * cnt + 2), glm::vec3());
+                auto object = std::make_shared<common::GameObject>(tp, rder);
+                auto render_component = std::make_shared<builtin_components::RenderableObject>(
+                    object,
+                    "./assets/materials/parallax_pbr.json",
+                    "./assets/models/test3.txt",
+                    &rManager);
+                object->AddComponent(render_component);
+                scene->objects.push_back(object);
+            }
+        }
+    }
+
+    scene->OnStart();
 
     // SaveScene(scene,"./assets/scene/scene.json");
 
-    TestController controller(scene->objects[3], camSpeed, 0.0005f);
+    unsigned int keys1[4] = {
+        GLFW_KEY_W,
+        GLFW_KEY_A,
+        GLFW_KEY_S,
+        GLFW_KEY_D,
+    };
+    unsigned int keys2[4] = {
+        GLFW_KEY_I,
+        GLFW_KEY_J,
+        GLFW_KEY_K,
+        GLFW_KEY_L,
+    };
+    TestController controller(scene->objects[1], camSpeed, 0.25f, true, keys1);
+    TestController controller2(scene->objects[2], camSpeed, 0.25f, false, keys2);
     // TestController controller(object1, camSpeed, 0.0005f);
     // TestController controller(lightObject3, camSpeed, 0.0005f);
     //  render loop
     //  -----------
     while (!glfwWindowShouldClose(window))
     {
+        float now = glfwGetTime();
+        if (time_prev == 0)
+            time_prev = glfwGetTime();
+        time_delta = now - time_prev;
+        time_prev = now;
+
         // input
         // -----
         processInput(window);
@@ -273,43 +332,24 @@ int main()
     return 0;
 }
 
+int keys[] = {GLFW_KEY_A, GLFW_KEY_W, GLFW_KEY_S, GLFW_KEY_D, GLFW_KEY_I, GLFW_KEY_J, GLFW_KEY_K, GLFW_KEY_L};
+
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    for (int i = 0; i < sizeof(keys) / sizeof(int); i++)
     {
-        auto desc = std::make_shared<common::ED_KeyboardPress>();
-        desc->keycode = GLFW_KEY_A;
-        common::EventTransmitter::GetInstance()->PublishEvent(
-            common::EventType::EVENT_KEYBOARD_PRESS,
-            std::static_pointer_cast<common::EventDescriptor>(desc));
-    }
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    {
-        auto desc = std::make_shared<common::ED_KeyboardPress>();
-        desc->keycode = GLFW_KEY_W;
-        common::EventTransmitter::GetInstance()->PublishEvent(
-            common::EventType::EVENT_KEYBOARD_PRESS,
-            std::static_pointer_cast<common::EventDescriptor>(desc));
-    }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    {
-        auto desc = std::make_shared<common::ED_KeyboardPress>();
-        desc->keycode = GLFW_KEY_S;
-        common::EventTransmitter::GetInstance()->PublishEvent(
-            common::EventType::EVENT_KEYBOARD_PRESS,
-            std::static_pointer_cast<common::EventDescriptor>(desc));
-    }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    {
-        auto desc = std::make_shared<common::ED_KeyboardPress>();
-        desc->keycode = GLFW_KEY_D;
-        common::EventTransmitter::GetInstance()->PublishEvent(
-            common::EventType::EVENT_KEYBOARD_PRESS,
-            std::static_pointer_cast<common::EventDescriptor>(desc));
+        if (glfwGetKey(window, keys[i]) == GLFW_PRESS)
+        {
+            auto desc = std::make_shared<common::ED_KeyboardPress>();
+            desc->keycode = keys[i];
+            common::EventTransmitter::GetInstance()->PublishEvent(
+                common::EventType::EVENT_KEYBOARD_PRESS,
+                std::static_pointer_cast<common::EventDescriptor>(desc));
+        }
     }
 }
 

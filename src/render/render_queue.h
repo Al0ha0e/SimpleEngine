@@ -100,8 +100,8 @@ namespace renderer
                 // TODO
                 render_queue[i] = std::make_shared<render_queue_node>(
                     common::BoundingBox(
-                        glm::vec3(-1000.0, -1000.0, -1000.0),
-                        glm::vec3(1000.0, 1000.0, 1000.0),
+                        glm::vec3(-64.0, -64.0, -64.0),
+                        glm::vec3(64.0, 64.0, 64.0),
                         1.0),
                     0);
                 render_queue[i]->content.init();

@@ -278,6 +278,7 @@ namespace builtin_components
     {
     public:
         glm::mat4 view;
+        bool is_sub;
 
         Camera() {}
         ~Camera() {}
@@ -286,7 +287,8 @@ namespace builtin_components
             float fov,
             float aspect,
             float near,
-            float far) : Component(object)
+            float far,
+            bool is_sub) : is_sub(is_sub), Component(object)
         {
             init(fov, aspect, near, far);
         }
@@ -302,8 +304,8 @@ namespace builtin_components
             glm::vec3 gfront = tparam->rotation * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
             glm::vec3 gup = tparam->rotation * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
             view = glm::lookAt(tparam->pos, tparam->pos + gfront, gup);
-            locked_object->rd->UpdateView(view, tparam->pos);
-            locked_object->rd->UpdateProjection(fov, aspect, near, far);
+            locked_object->rd->UpdateView(view, tparam->pos, is_sub);
+            locked_object->rd->UpdateProjection(fov, aspect, near, far, is_sub);
             common::EventTransmitter::GetInstance()->SubscribeEvent(
                 common::EventType::EVENT_WINDOW_RESIZE,
                 std::static_pointer_cast<common::EventListener>(std::shared_ptr<Camera>(this)));
@@ -313,7 +315,7 @@ namespace builtin_components
         {
             auto locked_object = object.lock();
             aspect = desc->width * 1.0f / desc->height;
-            locked_object->rd->UpdateProjection(fov, aspect, near, far);
+            locked_object->rd->UpdateProjection(fov, aspect, near, far, is_sub);
         }
 
         virtual void OnTransformed(common::TransformParameter &param)
@@ -322,7 +324,7 @@ namespace builtin_components
             glm::vec3 gfront = param.rotation * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
             glm::vec3 gup = param.rotation * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
             view = glm::lookAt(param.pos, param.pos + gfront, gup);
-            locked_object->rd->UpdateView(view, locked_object->GetTransformInfo()->pos);
+            locked_object->rd->UpdateView(view, param.pos, is_sub);
         }
 
         virtual void UnserializeJSON(nlohmann::json &j, std::shared_ptr<common::GameObject> obj, resources::ResourceManager *manager)

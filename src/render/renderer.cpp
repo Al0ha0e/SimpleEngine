@@ -1,4 +1,6 @@
 #include "renderer.h"
+#include <glm/gtx/string_cast.hpp>
+
 namespace renderer
 {
 
@@ -21,7 +23,7 @@ namespace renderer
     {
         for (auto &obj : now->content.objects)
         {
-            if (include || cam_param.Test(obj->mesh->box) != CameraParameters::FRUSTUM_SEPARATE)
+            if (include || cam_param.Test(obj->args->box) != CameraParameters::FRUSTUM_SEPARATE)
             {
                 obj->material->PrepareForDraw();
                 obj->Draw(obj->material->shader->shader);
@@ -43,5 +45,45 @@ namespace renderer
                 }
             }
         }
+    }
+
+    CameraParameters::frustum_relation CameraParameters::Test(const common::BoundingBox &box)
+    {
+        glm::vec3 bmin = box.min;
+        glm::vec3 bmax = box.max;
+        glm::vec3 vertices[8];
+        for (int i = 0; i < 2; i++)
+            for (int j = 0; j < 2; j++)
+                for (int k = 0; k < 2; k++)
+                {
+                    glm::vec3 &vert = vertices[i * 4 + j * 2 + k];
+                    vert.x = i ? bmin.x : bmax.x;
+                    vert.y = j ? bmin.y : bmax.y;
+                    vert.z = k ? bmin.z : bmax.z;
+                }
+        for (int i = 0; i < 8; i++)
+            vertices[i] = view * glm::vec4(vertices[i], 1.0);
+
+        bool allin, allout, intersect = false;
+        for (int i = 0; i < 6; i++)
+        {
+            allin = true, allout = true;
+            for (int j = 0; j < 8; j++)
+            {
+                glm::vec3 &vert = vertices[j];
+                if (glm::dot(vert - frustum_pos[i], frustum_dir[i]) < 0)
+                    allin = false;
+                else
+                    allout = false;
+            }
+            if (allout)
+                return FRUSTUM_SEPARATE;
+            intersect |= !allin;
+        }
+
+        if (intersect)
+            return FRUSTUM_INTERSECT;
+
+        return FRUSTUM_INCLUDE;
     }
 }
