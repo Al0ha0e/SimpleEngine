@@ -32,7 +32,7 @@ namespace builtin_materials
             {
                 shader->Dispose();
             }
-            //TODO texture dispose
+            // TODO texture dispose
         }
 
         std::shared_ptr<common::Texture2D> texture;
@@ -74,7 +74,7 @@ namespace builtin_materials
             {
                 shader->Dispose();
             }
-            //TODO texture dispose
+            // TODO texture dispose
         }
 
         std::shared_ptr<common::Texture2D> diffuse;
@@ -126,7 +126,7 @@ namespace builtin_materials
             {
                 shader->Dispose();
             }
-            //TODO texture dispose
+            // TODO texture dispose
         }
 
         std::shared_ptr<common::Texture2D> diffuse;
@@ -174,7 +174,7 @@ namespace builtin_materials
             {
                 shader->Dispose();
             }
-            //TODO texture dispose
+            // TODO texture dispose
         }
 
         std::shared_ptr<common::Texture2D> albedo;
@@ -228,7 +228,7 @@ namespace builtin_materials
             {
                 shader->Dispose();
             }
-            //TODO texture dispose
+            // TODO texture dispose
         }
 
         std::shared_ptr<common::Texture2D> albedo;
@@ -257,15 +257,15 @@ namespace builtin_materials
             {
                 shader->Dispose();
             }
-            //TODO texture dispose
+            // TODO texture dispose
         }
 
-        virtual void UnserializeJSON(std::string s, resources::ResourceManager *manager)
+        virtual void UnserializeJSON(std::string s)
         {
             auto j = nlohmann::json::parse(s);
             render_mode = j["render_mode"].get<unsigned int>();
             std::string shaderpth = j["shader"].get<std::string>();
-            shader = manager->LoadMeta<common::ShaderProgram>(shaderpth);
+            shader = resources::LoadMeta<common::ShaderProgram>(shaderpth);
             glUseProgram(shader->shader);
             auto tx2d = j["2D_textures"];
             auto txcube = j["cube_textures"];
@@ -275,7 +275,7 @@ namespace builtin_materials
             for (auto &texture_info : tx2d)
             {
                 std::string name = texture_info["name"].get<std::string>();
-                auto tex = manager->Load<common::Texture2D>(texture_info["path"].get<std::string>());
+                auto tex = resources::Load<common::Texture2D>(texture_info["path"].get<std::string>());
                 textures_2d.insert(kv_tex2d(name, tex));
                 idxs.insert(kv_int(name, texture_cnt));
                 glUniform1i(glGetUniformLocation(shader->shader, name.c_str()), texture_cnt + common::ENGINE_TEXTURE_CNT);

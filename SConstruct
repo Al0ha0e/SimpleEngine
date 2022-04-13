@@ -9,7 +9,8 @@ Program("test",
          "./src/common/common.cpp",
          "./src/common/game_object.cpp",
          "./src/glad.c",
-         "./src/test.cpp"],
+         "./src/test.cpp", 
+         "./src/resource/resource.cpp", ],
         LIBS=['msvcrtd', 'libcmt', 'Gdi32', 'shell32', 'user32', 'opengl32', 'glfw3'], LIBPATH=['./libs'], CPPPATH=['./include'])
 
 Program("gen_six",

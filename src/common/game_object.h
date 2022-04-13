@@ -43,7 +43,7 @@ namespace common
         virtual void OnTransformed(TransformParameter &param) {}
         virtual void OnStart() {}
         virtual void Dispose() {}
-        virtual void UnserializeJSON(nlohmann::json &j, std::shared_ptr<GameObject> obj, resources::ResourceManager *manager) {}
+        virtual void UnserializeJSON(nlohmann::json &j, std::shared_ptr<GameObject> obj) {}
         virtual std::string SerializeJSON() { return ""; }
 
     protected:
@@ -53,8 +53,7 @@ namespace common
     std::shared_ptr<Component> UnserializeComponent(
         std::string tp,
         nlohmann::json &j,
-        std::shared_ptr<GameObject> obj,
-        resources::ResourceManager *manager);
+        std::shared_ptr<GameObject> obj);
 
     std::string SerializeComponent(Component &component);
 
@@ -99,7 +98,7 @@ namespace common
             }
         }
 
-        virtual void UnserializeJSON(nlohmann::json &j, resources::ResourceManager *manager)
+        virtual void UnserializeJSON(nlohmann::json &j)
         {
             auto pos = j["pos"];
             auto dir = j["dir"];
@@ -111,8 +110,7 @@ namespace common
             {
                 AddComponent(UnserializeComponent(component["tp"].get<std::string>(),
                                                   component["content"],
-                                                  self,
-                                                  manager));
+                                                  self));
             }
         }
 
@@ -197,17 +195,16 @@ namespace builtin_components
         RenderableObject() {}
         RenderableObject(std::shared_ptr<common::GameObject> object,
                          std::string material_pth,
-                         std::string mesh_pth,
-                         resources::ResourceManager *manager) : Component(object)
+                         std::string mesh_pth) : Component(object)
         {
-            init(material_pth, mesh_pth, manager);
+            init(material_pth, mesh_pth);
         }
-        void init(std::string material_pth, std::string mesh_pth, resources::ResourceManager *manager)
+        void init(std::string material_pth, std::string mesh_pth)
         {
             this->material_pth = material_pth;
             this->mesh_pth = mesh_pth;
-            material = manager->LoadMeta<builtin_materials::CustomMaterial>(material_pth);
-            mesh = manager->Load<common::ModelMesh>(mesh_pth);
+            material = resources::LoadMeta<builtin_materials::CustomMaterial>(material_pth);
+            mesh = resources::Load<common::ModelMesh>(mesh_pth);
             args = std::make_shared<common::RenderArguments>();
             item = std::make_shared<renderer::RenderQueueItem>(object.lock()->id, material, mesh, args, mesh->id_count);
             // TODO
@@ -236,10 +233,10 @@ namespace builtin_components
             }
         }
 
-        virtual void UnserializeJSON(nlohmann::json &j, std::shared_ptr<common::GameObject> obj, resources::ResourceManager *manager)
+        virtual void UnserializeJSON(nlohmann::json &j, std::shared_ptr<common::GameObject> obj)
         {
             this->object = obj;
-            init(j["material"].get<std::string>(), j["mesh"].get<std::string>(), manager);
+            init(j["material"].get<std::string>(), j["mesh"].get<std::string>());
         }
 
         virtual std::string SerializeJSON()
@@ -327,7 +324,7 @@ namespace builtin_components
             locked_object->rd->UpdateView(view, param.pos, is_sub);
         }
 
-        virtual void UnserializeJSON(nlohmann::json &j, std::shared_ptr<common::GameObject> obj, resources::ResourceManager *manager)
+        virtual void UnserializeJSON(nlohmann::json &j, std::shared_ptr<common::GameObject> obj)
         {
             this->object = obj;
             init(j["fov"].get<float>(),
@@ -384,7 +381,7 @@ namespace builtin_components
             renderer::LightManager::GetInstance()->UpdateItem(lid);
         }
 
-        virtual void UnserializeJSON(nlohmann::json &j, std::shared_ptr<common::GameObject> obj, resources::ResourceManager *manager)
+        virtual void UnserializeJSON(nlohmann::json &j, std::shared_ptr<common::GameObject> obj)
         {
             this->object = obj;
             auto &tparam = obj->GetTransformInfo();

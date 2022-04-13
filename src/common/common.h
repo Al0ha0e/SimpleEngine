@@ -106,7 +106,7 @@ namespace common
             fs.Dispose();
         }
 
-        virtual void UnserializeJSON(std::string s, resources::ResourceManager *manager)
+        virtual void UnserializeJSON(std::string s)
         {
             auto j = nlohmann::json::parse(s);
             std::string vpth = j["vertex"].get<std::string>();
@@ -124,7 +124,7 @@ namespace common
             this->Load(pth);
         }
 
-        virtual void UnserializeJSON(std::string s, resources::ResourceManager *manager)
+        virtual void UnserializeJSON(std::string s)
         {
             auto j = nlohmann::json::parse(s);
             unsigned int wraps = j["wraps"].get<unsigned int>();
@@ -209,7 +209,7 @@ namespace common
             init(faces);
         }
 
-        virtual void UnserializeJSON(std::string s, resources::ResourceManager *manager)
+        virtual void UnserializeJSON(std::string s)
         {
             auto j = nlohmann::json::parse(s);
             std::vector<std::string> faces(6);

@@ -106,7 +106,7 @@ std::shared_ptr<common::GameObject> MakeLight(
     return lightObject;
 }
 
-std::shared_ptr<common::Scene> LoadScene(std::shared_ptr<renderer::Renderer> rder, resources::ResourceManager *manager, std::string pth)
+std::shared_ptr<common::Scene> LoadScene(std::shared_ptr<renderer::Renderer> rder, std::string pth)
 {
     auto ret = std::make_shared<common::Scene>(rder);
     std::ifstream infile(pth);
@@ -114,7 +114,7 @@ std::shared_ptr<common::Scene> LoadScene(std::shared_ptr<renderer::Renderer> rde
     buffer << infile.rdbuf();
     std::string s(buffer.str());
     infile.close();
-    ret->UnserializeJSON(s, manager);
+    ret->UnserializeJSON(s);
     return ret;
 }
 
@@ -164,21 +164,19 @@ int main()
 
     float camSpeed = 4;
 
-    auto rManager = resources::ResourceManager();
+    auto skybox = resources::LoadMeta<renderer::SkyBox>("./assets/skybox/skybox.json");
 
-    auto skybox = rManager.LoadMeta<renderer::SkyBox>("./assets/skybox/skybox.json");
-
-    auto rder = std::make_shared<renderer::Renderer>(glm::vec4(0.3f, 0.3f, 0.3f, 0.0f), skybox);
+    auto rder = std::make_shared<renderer::Renderer>(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), skybox);
     // auto scene = LoadScene(rder, &rManager, "./assets/scene/scene.json");
     // scene->OnStart();
     auto scene = std::make_shared<common::Scene>(rder);
 
-    auto lightObject1 = MakeLight(rder, renderer::DIRECTIONAL_LIGHT,
-                                  glm::vec3(), glm::vec3(glm::radians(45.0f), 0.0f, 0.0f),
-                                  glm::vec3(1.0f, 1.0f, 0.7f),
-                                  2.7f, 0.0f);
+    // auto lightObject1 = MakeLight(rder, renderer::DIRECTIONAL_LIGHT,
+    //                               glm::vec3(), glm::vec3(glm::radians(45.0f), 0.0f, 0.0f),
+    //                               glm::vec3(1.0f, 1.0f, 1.0f),
+    //                               2.7f, 0.0f);
     // lightObject1->OnStart();
-    scene->objects.push_back(lightObject1);
+    // scene->objects.push_back(lightObject1);
 
     // auto lightObject2 = MakeLight(rder, renderer::SPOT_LIGHT,
     //                               glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(glm::radians(150.0f), 0.0f, 0.0f),
@@ -187,12 +185,12 @@ int main()
     // lightObject2->OnStart();
     // scene.objects.push_back(lightObject2);
 
-    // auto lightObject3 = MakeLight(rder, renderer::POINT_LIGHT,
-    //                               glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(),
-    //                               glm::vec3(0.0f, 0.0f, 1.0f),
-    //                               2.6f, 0.0f);
+    auto lightObject3 = MakeLight(rder, renderer::POINT_LIGHT,
+                                  glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(),
+                                  glm::vec3(1.0f, 1.0f, 1.0f),
+                                  10.0f, 0.0f);
     // lightObject3->OnStart();
-    // scene.objects.push_back(lightObject3);
+    scene->objects.push_back(lightObject3);
 
     auto camObject = MakeCamera(
         rder,
@@ -218,7 +216,7 @@ int main()
     // camObject->OnStart();
     scene->objects.push_back(camObject2);
 
-    // auto tp = std::make_shared<common::TransformParameter>(glm::vec3(), glm::vec3());
+    auto tp = std::make_shared<common::TransformParameter>(glm::vec3(), glm::vec3());
     // auto tp1 = std::make_shared<common::TransformParameter>(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3());
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -237,17 +235,16 @@ int main()
     // rder->RegisterMaterial(id, material, renderer::OPAQUE);
     // rder->RegisterMaterial(id1, material1, renderer::OPAQUE);
     /////////////////////////////////////////////////////////////////////////////////////////////////
-    // auto object = std::make_shared<common::GameObject>(tp, rder);
+    auto object = std::make_shared<common::GameObject>(tp, rder);
     // auto object1 = std::make_shared<common::GameObject>(tp1, rder);
 
-    // auto render_component = std::make_shared<builtin_components::RenderableObject>(
-    //     object,
-    //     "./assets/materials/parallax_pbr.json",
-    //     "./assets/models/test2.txt",
-    //     &rManager);
-    // object->AddComponent(render_component);
+    auto render_component = std::make_shared<builtin_components::RenderableObject>(
+        object,
+        "./assets/materials/parallax_pbr.json",
+        "./assets/models/test2.txt");
+    object->AddComponent(render_component);
     // object->OnStart();
-    // scene.objects.push_back(object);
+    scene->objects.push_back(object);
 
     // auto render_component1 = std::make_shared<builtin_components::RenderableObject>(
     //     object1,
@@ -257,26 +254,27 @@ int main()
     // object1->AddComponent(render_component1);
     // object1->OnStart();
     // scene.objects.push_back(object1);
-    const int cnt = 8;
-    std::shared_ptr<common::GameObject> objects[cnt][cnt][cnt];
-    for (int i = 0; i < cnt; i++)
-    {
-        for (int j = 0; j < cnt; j++)
-        {
-            for (int k = 0; k < cnt; k++)
-            {
-                auto tp = std::make_shared<common::TransformParameter>(glm::vec3(i * 4 - 2 * cnt + 2, j * 4 - 2 * cnt + 2, k * 4 - 2 * cnt + 2), glm::vec3());
-                auto object = std::make_shared<common::GameObject>(tp, rder);
-                auto render_component = std::make_shared<builtin_components::RenderableObject>(
-                    object,
-                    "./assets/materials/parallax_pbr.json",
-                    "./assets/models/test3.txt",
-                    &rManager);
-                object->AddComponent(render_component);
-                scene->objects.push_back(object);
-            }
-        }
-    }
+
+    // const int cnt = 8;
+    // std::shared_ptr<common::GameObject> objects[cnt][cnt][cnt];
+    // for (int i = 0; i < cnt; i++)
+    // {
+    //     for (int j = 0; j < cnt; j++)
+    //     {
+    //         for (int k = 0; k < cnt; k++)
+    //         {
+    //             auto tp = std::make_shared<common::TransformParameter>(glm::vec3(i * 4 - 2 * cnt + 2, j * 4 - 2 * cnt + 2, k * 4 - 2 * cnt + 2), glm::vec3());
+    //             auto object = std::make_shared<common::GameObject>(tp, rder);
+    //             auto render_component = std::make_shared<builtin_components::RenderableObject>(
+    //                 object,
+    //                 "./assets/materials/parallax_pbr.json",
+    //                 "./assets/models/test3.txt",
+    //                 &rManager);
+    //             object->AddComponent(render_component);
+    //             scene->objects.push_back(object);
+    //         }
+    //     }
+    // }
 
     scene->OnStart();
 

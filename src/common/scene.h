@@ -12,7 +12,7 @@ namespace common
         ~Scene() {}
         Scene(std::shared_ptr<renderer::Renderer> rd) : rd(rd) {}
 
-        virtual void UnserializeJSON(std::string s, resources::ResourceManager *manager)
+        virtual void UnserializeJSON(std::string s)
         {
             auto j = nlohmann::json::parse(s);
             auto objs = j["objects"];
@@ -20,7 +20,7 @@ namespace common
             {
                 auto object = std::make_shared<GameObject>(rd);
                 object->self = object;
-                object->UnserializeJSON(obj, manager);
+                object->UnserializeJSON(obj);
                 objects.push_back(object);
             }
         }

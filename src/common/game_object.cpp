@@ -7,25 +7,24 @@ namespace common
     std::shared_ptr<Component> UnserializeComponent(
         std::string tp,
         nlohmann::json &j,
-        std::shared_ptr<GameObject> obj,
-        resources::ResourceManager *manager)
+        std::shared_ptr<GameObject> obj)
     {
         if (tp == "renderable_obj")
         {
             auto ret = std::make_shared<builtin_components::RenderableObject>();
-            ret->UnserializeJSON(j, obj, manager);
+            ret->UnserializeJSON(j, obj);
             return ret;
         }
         else if (tp == "camera")
         {
             auto ret = std::make_shared<builtin_components::Camera>();
-            ret->UnserializeJSON(j, obj, manager);
+            ret->UnserializeJSON(j, obj);
             return ret;
         }
         else if (tp == "light")
         {
             auto ret = std::make_shared<builtin_components::Light>();
-            ret->UnserializeJSON(j, obj, manager);
+            ret->UnserializeJSON(j, obj);
             return ret;
         }
         return std::make_shared<Component>();
