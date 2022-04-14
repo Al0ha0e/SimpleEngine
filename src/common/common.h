@@ -116,6 +116,19 @@ namespace common
         }
     };
 
+    struct ComputeShaderProgram
+    {
+        unsigned int shader;
+        ComputeShaderProgram() {}
+        ComputeShaderProgram(std::string pth)
+        {
+            shader = glCreateProgram();
+            Shader s(pth, COMPUTE_SHADER);
+            glAttachShader(shader, s.shader);
+            glLinkProgram(shader);
+        }
+    };
+
     struct Texture2D : public resources::SerializableObject
     {
         Texture2D() {}
