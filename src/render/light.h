@@ -143,19 +143,19 @@ namespace renderer
         {
             glGenBuffers(1, &ubo_pointlights);
             glBindBuffer(GL_UNIFORM_BUFFER, ubo_pointlights);
-            glBufferData(GL_UNIFORM_BUFFER, max_point_light * 3 * sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
+            glBufferData(GL_UNIFORM_BUFFER, max_point_light * 3 * sizeof(glm::vec4) + sizeof(int), NULL, GL_DYNAMIC_DRAW);
             glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_pointlights);
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
             glGenBuffers(1, &ubo_spotlights);
             glBindBuffer(GL_UNIFORM_BUFFER, ubo_spotlights);
-            glBufferData(GL_UNIFORM_BUFFER, max_spot_light * 3 * sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
+            glBufferData(GL_UNIFORM_BUFFER, max_spot_light * 3 * sizeof(glm::vec4) + sizeof(int), NULL, GL_DYNAMIC_DRAW);
             glBindBufferBase(GL_UNIFORM_BUFFER, 3, ubo_spotlights);
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
             glGenBuffers(1, &ubo_directionals);
             glBindBuffer(GL_UNIFORM_BUFFER, ubo_directionals);
-            glBufferData(GL_UNIFORM_BUFFER, max_directional_light * 3 * sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
+            glBufferData(GL_UNIFORM_BUFFER, max_directional_light * 3 * sizeof(glm::vec4) + sizeof(int), NULL, GL_DYNAMIC_DRAW);
             glBindBufferBase(GL_UNIFORM_BUFFER, 4, ubo_directionals);
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
         }

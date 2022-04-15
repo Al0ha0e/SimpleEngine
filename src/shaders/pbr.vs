@@ -12,6 +12,7 @@ layout(std140, binding = 0) uniform VPBlock{
     mat4 view;
     mat4 projection;
     vec4 viewPos;
+    vec4 camInfo;
 };
 
 

@@ -2,7 +2,7 @@
 #define RENDERER_H
 
 #include <glad/glad.h>
-
+#include <glm/gtx/string_cast.hpp>
 #include <GLFW/glfw3.h>
 
 #include "../common/common.h"
@@ -71,16 +71,35 @@ namespace renderer
             glEnable(GL_CULL_FACE);
             glGenBuffers(1, &ubo_VP);
             glBindBuffer(GL_UNIFORM_BUFFER, ubo_VP);
-            glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4) + sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
+            glBufferData(GL_UNIFORM_BUFFER, 2 * (sizeof(glm::mat4) + sizeof(glm::vec4)), NULL, GL_DYNAMIC_DRAW);
             glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_VP);
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
             glGenBuffers(1, &ubo_GI);
             glBindBuffer(GL_UNIFORM_BUFFER, ubo_GI);
-            glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
+            glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::vec4) + sizeof(glm::vec2), NULL, GL_DYNAMIC_DRAW);
             glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_GI);
             glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::vec4), glm::value_ptr(ambient));
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+            glGenBuffers(1, &ssbo_totindex);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_totindex);
+            int size = sizeof(int) * (max_point_light + max_spot_light) * 8 + sizeof(glm::ivec2);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, size, NULL, GL_DYNAMIC_DRAW);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_totindex);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+            glGenTextures(1, &lightgrid);
+            glBindTexture(GL_TEXTURE_3D, lightgrid);
+            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, 16, 16, 16, 0, GL_RGBA, GL_FLOAT, NULL);
+            glBindImageTexture(0, lightgrid, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+            light_culler = std::make_shared<common::ComputeShaderProgram>("./src/shaders/cull_lights.cs");
         }
 
         void Render();
@@ -98,14 +117,21 @@ namespace renderer
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
         }
 
-        void UpdateProjection(float fov, float aspect, float near, float far, bool sub)
+        void UpdateProjection(float fov, float width, float height, float near, float far, bool sub)
         {
+            float aspect = width / height;
             auto &param = sub ? sub_param : cam_param;
             param.UpdateParam(fov, aspect, near, far);
             if (sub)
                 return;
             glBindBuffer(GL_UNIFORM_BUFFER, ubo_VP);
             glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(param.projection));
+            glm::vec4 info(fov, aspect, near, far);
+            glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2 + sizeof(glm::vec4), sizeof(glm::vec4), glm::value_ptr(info));
+
+            glBindBuffer(GL_UNIFORM_BUFFER, ubo_GI);
+            glm::vec2 size(width, height);
+            glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::vec4), sizeof(glm::vec2), glm::value_ptr(size));
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
         }
 
@@ -115,11 +141,13 @@ namespace renderer
         glm::vec4 ambient;
         unsigned int ubo_VP;
         unsigned int ubo_GI;
-        unsigned int max_pointlight;
-        unsigned int max_spotlight;
+        unsigned int ssbo_totindex;
+        unsigned int lightgrid;
 
         std::shared_ptr<SkyBox> skybox;
+        std::shared_ptr<common::ComputeShaderProgram> light_culler;
 
+        void cull_lights();
         void render(std::shared_ptr<render_queue_node> &now, bool include);
     };
 }

@@ -11,12 +11,24 @@ namespace renderer
         glDepthMask(GL_FALSE);
         skybox->Draw();
         glDepthMask(GL_TRUE);
-        glBindBuffer(GL_UNIFORM_BUFFER, ubo_GI);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::vec4), glm::value_ptr(ambient));
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        cull_lights();
         auto &layers = RenderLayerManager::GetInstance()->layers;
         for (auto &layer : layers)
             render(layer.GetQueue(OPAQUE), false);
+    }
+
+    void Renderer::cull_lights()
+    {
+        glUseProgram(light_culler->shader);
+        glBindBuffer(GL_UNIFORM_BUFFER, ssbo_totindex);
+        glm::vec2 st(0, 0);
+        glBufferSubData(
+            GL_UNIFORM_BUFFER,
+            sizeof(int) * (max_point_light + max_spot_light) * 8,
+            sizeof(glm::ivec2),
+            glm::value_ptr(st));
+        glDispatchCompute(1, 1, 4);
+        glMemoryBarrier(GL_ALL_BARRIER_BITS);
     }
 
     void Renderer::render(std::shared_ptr<render_queue_node> &now, bool include)
@@ -34,15 +46,17 @@ namespace renderer
         {
             for (auto &subnode : now->subnodes)
             {
-                CameraParameters::frustum_relation rel = cam_param.Test(subnode->box);
-                if (rel == CameraParameters::FRUSTUM_INCLUDE)
+                if (include)
                 {
                     render(subnode, true);
+                    continue;
                 }
+                CameraParameters::frustum_relation rel = cam_param.Test(subnode->box);
+
+                if (rel == CameraParameters::FRUSTUM_INCLUDE)
+                    render(subnode, true);
                 else if (rel == CameraParameters::FRUSTUM_INTERSECT)
-                {
                     render(subnode, false);
-                }
             }
         }
     }

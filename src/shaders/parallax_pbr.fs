@@ -1,5 +1,8 @@
 #version 450 core
 
+#define max_point_light 512*8
+#define max_spot_light 512*8
+
 out vec4 FragColor;
 in vec3 FragPos;  
 in mat3 TBN;  
@@ -9,10 +12,12 @@ layout(std140, binding = 0) uniform VPBlock{
     mat4 view;
     mat4 projection;
     vec4 viewPos;
+    vec4 camInfo;
 };
 
 layout(std140, binding = 1) uniform GIBlock{
     vec4 ambient;
+    vec2 screenSize;
 };
 layout (binding = 1) uniform sampler2D irradianceMap;
 layout (binding = 2) uniform sampler2D prefilteredMap;
@@ -31,15 +36,26 @@ struct Light {
 
 layout(std140, binding = 2) uniform point_block{
     Light pointlights[512];
+    uint point_cnt;
 };
 
 layout(std140, binding = 3) uniform spot_block{
     Light spotlights[512];
+    uint spot_cnt;
 };
 
 layout(std140, binding = 4) uniform directional_block{
     Light directionals[8];
+    uint directional_cnt;
 };
+
+layout(std140, binding = 0) buffer LightIndexBlock{
+    int point_index[max_point_light];
+    int spot_index[max_spot_light];
+    ivec2 light_index_pos;
+};
+
+layout(rgba32f, binding = 0) uniform image3D light_grid;
 
 const float PI = 3.14159265359;
 
@@ -123,38 +139,50 @@ vec3 CalcPBR(vec3 N, vec3 V, vec3 L, vec3 radiance, vec3 albedo, vec2 material)
 }
 
 
-vec3 handlePointLight(vec3 N, vec3 V, vec3 albedo, vec2 material)
+vec3 handlePointLight(vec3 N, vec3 V, vec3 albedo, vec2 material, ivec4 info)
 {
-    Light l0 = pointlights[0];
-    vec3 L = normalize(l0.position.xyz - FragPos);
-    float intensity = l0.position.w;
-    float dist = length(l0.position.xyz - FragPos);
-    float attenuation = 1.0 / (1 + 0.14 * dist + 0.07 * dist * dist);
-    vec3 radiance = l0.color.xyz * attenuation * intensity;
-    return CalcPBR(N, V, L, radiance, albedo, material);
+    vec3 ret = vec3(0,0,0);
+    for(int i = 0; i < info.y; i++){
+        Light l0 = pointlights[point_index[info.x + i]];
+        vec3 L = normalize(l0.position.xyz - FragPos);
+        float intensity = l0.position.w;
+        float dist = length(l0.position.xyz - FragPos);
+        float attenuation = 1.0 / (1 + 0.14 * dist + 0.07 * dist * dist);
+        vec3 radiance = l0.color.xyz * attenuation * intensity;
+        ret += CalcPBR(N, V, L, radiance, albedo, material);
+    }
+    return ret;
 }
 
-vec3 handleSpotLight(vec3 N, vec3 V, vec3 albedo, vec2 material)
+vec3 handleSpotLight(vec3 N, vec3 V, vec3 albedo, vec2 material, ivec4 info)
 {
-    Light l0 = spotlights[0];
-    vec3 L = normalize(l0.position.xyz - FragPos);
-    float intensity = l0.position.w;
-    float dist = length(l0.position.xyz - FragPos);
-    float attenuation = 1.0 / (1 + 0.14 * dist + 0.07 * dist * dist);
-    float cutoff = l0.direction.w;
-    float dirdet = dot(L, normalize(-l0.direction.xyz));
-    float diratten = 1.0 - clamp((cutoff - dirdet)/ (0.2 * cutoff),0.0,1.0);
-    vec3 radiance = l0.color.xyz * diratten * attenuation * intensity;
-    return CalcPBR(N, V, L, radiance, albedo, material);
+    vec3 ret = vec3(0, 0, 0);
+    for(uint i = 0; i < info.y; i++){
+        Light l0 = spotlights[spot_index[info.x + i]];
+        vec3 L = normalize(l0.position.xyz - FragPos);
+        float intensity = l0.position.w;
+        float dist = length(l0.position.xyz - FragPos);
+        float attenuation = 1.0 / (1 + 0.14 * dist + 0.07 * dist * dist);
+        float cutoff = l0.direction.w;
+        float dirdet = dot(L, normalize(-l0.direction.xyz));
+        float diratten = 1.0 - clamp((cutoff - dirdet)/ (0.2 * cutoff),0.0,1.0);
+        vec3 radiance = l0.color.xyz * diratten * attenuation * intensity;
+        ret += CalcPBR(N, V, L, radiance, albedo, material);
+    }
+    return ret;
 }
 
 vec3 handleDirectional(vec3 N, vec3 V, vec3 albedo, vec2 material)
 {
-    Light l0 = directionals[0];
-    vec3 L = normalize(-l0.direction.xyz);
-    float intensity = l0.position.w;
-    vec3 radiance = l0.color.xyz * intensity;
-    return CalcPBR(N, V, L, radiance, albedo, material);
+    vec3 ret = vec3(0, 0, 0);
+    for(uint i = 0; i < directional_cnt; i++){
+        Light l0 = directionals[i];
+        vec3 L = normalize(-l0.direction.xyz);
+        float intensity = l0.position.w;
+        vec3 radiance = l0.color.xyz * intensity;
+        ret +=  CalcPBR(N, V, L, radiance, albedo, material);
+    }
+    return ret;
 }
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir)
@@ -202,10 +230,20 @@ void main()
     vec2 envBRDF  = texture(lutMap, vec2(max(dot(N, V), 0.0), roughness)).rg;
     vec3 specular = prefilteredColor * (kS * envBRDF.x + envBRDF.y);
 
-    vec3 color = (kD * irradiance * albedo + specular) * ao;
+    vec3 color = (kD * irradiance * albedo + specular) * ao; //ambient.xyz * albedo;
 
-    color += handlePointLight(N, V, albedo, material.rg);
-    color += handleSpotLight(N, V, albedo, material.rg);
+    float near = camInfo.z;
+    float far = camInfo.w;
+    float width = screenSize.x;
+    float height = screenSize.y;
+    vec3 vpos = (view * vec4(FragPos, 1.0)).xyz;
+    int zi = int(clamp(floor(16 * (-vpos.z - near) / (far - near)), 0, 15));
+    int xi = int(clamp(floor(gl_FragCoord.x / width * 16), 0, 15));
+    int yi = int(clamp(floor(gl_FragCoord.y / height * 16), 0, 15));
+    ivec4 info = ivec4(imageLoad(light_grid, ivec3(xi,yi,zi)));
+
+    color += handlePointLight(N, V, albedo, material.rg, info);
+    color += handleSpotLight(N, V, albedo, material.rg, info);
     color += handleDirectional(N, V, albedo, material.rg);
 
     // HDR tonemapping

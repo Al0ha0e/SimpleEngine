@@ -282,18 +282,20 @@ namespace builtin_components
         Camera(
             std::shared_ptr<common::GameObject> object,
             float fov,
-            float aspect,
+            float width,
+            float height,
             float near,
             float far,
             bool is_sub) : is_sub(is_sub), Component(object)
         {
-            init(fov, aspect, near, far);
+            init(fov, width, height, near, far);
         }
 
-        void init(float fov, float aspect, float near, float far)
+        void init(float fov, float width, float height, float near, float far)
         {
             this->fov = fov;
-            this->aspect = aspect;
+            this->width = width;
+            this->height = height;
             this->near = near;
             this->far = far;
             auto locked_object = object.lock();
@@ -302,7 +304,7 @@ namespace builtin_components
             glm::vec3 gup = tparam->rotation * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
             view = glm::lookAt(tparam->pos, tparam->pos + gfront, gup);
             locked_object->rd->UpdateView(view, tparam->pos, is_sub);
-            locked_object->rd->UpdateProjection(fov, aspect, near, far, is_sub);
+            locked_object->rd->UpdateProjection(fov, width, height, near, far, is_sub);
             common::EventTransmitter::GetInstance()->SubscribeEvent(
                 common::EventType::EVENT_WINDOW_RESIZE,
                 std::static_pointer_cast<common::EventListener>(std::shared_ptr<Camera>(this)));
@@ -311,8 +313,7 @@ namespace builtin_components
         virtual void OnWindowResize(std::shared_ptr<common::ED_WindowResize> desc)
         {
             auto locked_object = object.lock();
-            aspect = desc->width * 1.0f / desc->height;
-            locked_object->rd->UpdateProjection(fov, aspect, near, far, is_sub);
+            locked_object->rd->UpdateProjection(fov, desc->width, desc->height, near, far, is_sub);
         }
 
         virtual void OnTransformed(common::TransformParameter &param)
@@ -328,7 +329,8 @@ namespace builtin_components
         {
             this->object = obj;
             init(j["fov"].get<float>(),
-                 j["aspect"].get<float>(),
+                 j["width"].get<float>(),
+                 j["height"].get<float>(),
                  j["near"].get<float>(),
                  j["far"].get<float>());
         }
@@ -337,7 +339,8 @@ namespace builtin_components
         {
             std::string ret = "{\n";
             ret += "\"fov\": " + std::to_string(fov) + ",\n";
-            ret += "\"aspect\": " + std::to_string(aspect) + ",\n";
+            ret += "\"width\": " + std::to_string(width) + ",\n";
+            ret += "\"height\": " + std::to_string(height) + ",\n";
             ret += "\"near\": " + std::to_string(near) + ",\n";
             ret += "\"far\": " + std::to_string(far);
             ret += "\n}";
@@ -346,7 +349,8 @@ namespace builtin_components
 
     private:
         float fov;
-        float aspect;
+        float width;
+        float height;
         float near;
         float far;
     };

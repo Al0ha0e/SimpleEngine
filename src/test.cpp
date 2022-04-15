@@ -76,14 +76,15 @@ std::shared_ptr<common::GameObject> MakeCamera(
     glm::vec3 pos,
     glm::vec3 dir,
     float fov,
-    float aspect,
+    float width,
+    float height,
     float near,
     float far,
     bool is_sub)
 {
     auto tpCam = std::make_shared<common::TransformParameter>(pos, dir);
     auto camObject = std::make_shared<common::GameObject>(tpCam, rder);
-    auto cam = std::make_shared<builtin_components::Camera>(camObject, fov, aspect, near, far, is_sub);
+    auto cam = std::make_shared<builtin_components::Camera>(camObject, fov, width, height, near, far, is_sub);
     camObject->AddComponent(cam);
     return camObject;
 }
@@ -188,7 +189,7 @@ int main()
     auto lightObject3 = MakeLight(rder, renderer::POINT_LIGHT,
                                   glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(),
                                   glm::vec3(1.0f, 1.0f, 1.0f),
-                                  10.0f, 0.0f);
+                                  1.0f, 0.0f);
     // lightObject3->OnStart();
     scene->objects.push_back(lightObject3);
 
@@ -197,7 +198,8 @@ int main()
         glm::vec3(0.0f, 0.0f, 2.0f),
         glm::vec3(),
         glm::radians(45.0f),
-        SCR_WIDTH * 1.0f / SCR_HEIGHT,
+        SCR_WIDTH,
+        SCR_HEIGHT,
         0.1f,
         100.0f,
         false);
@@ -209,7 +211,8 @@ int main()
         glm::vec3(0.0f, 0.0f, 2.0f),
         glm::vec3(),
         glm::radians(20.0f),
-        SCR_WIDTH * 1.0f / SCR_HEIGHT,
+        SCR_WIDTH,
+        SCR_HEIGHT,
         0.1f,
         100.0f,
         true);
