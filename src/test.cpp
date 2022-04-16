@@ -172,12 +172,12 @@ int main()
     // scene->OnStart();
     auto scene = std::make_shared<common::Scene>(rder);
 
-    // auto lightObject1 = MakeLight(rder, renderer::DIRECTIONAL_LIGHT,
-    //                               glm::vec3(), glm::vec3(glm::radians(45.0f), 0.0f, 0.0f),
-    //                               glm::vec3(1.0f, 1.0f, 1.0f),
-    //                               2.7f, 0.0f);
+    auto lightObject1 = MakeLight(rder, renderer::DIRECTIONAL_LIGHT,
+                                  glm::vec3(), glm::vec3(glm::radians(45.0f), 0.0f, 0.0f),
+                                  glm::vec3(1.0f, 1.0f, 1.0f),
+                                  2.7f, 0.0f);
     // lightObject1->OnStart();
-    // scene->objects.push_back(lightObject1);
+    scene->objects.push_back(lightObject1);
 
     // auto lightObject2 = MakeLight(rder, renderer::SPOT_LIGHT,
     //                               glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(glm::radians(150.0f), 0.0f, 0.0f),
@@ -186,12 +186,24 @@ int main()
     // lightObject2->OnStart();
     // scene.objects.push_back(lightObject2);
 
-    auto lightObject3 = MakeLight(rder, renderer::POINT_LIGHT,
-                                  glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(),
-                                  glm::vec3(1.0f, 1.0f, 1.0f),
-                                  1.0f, 0.0f);
-    // lightObject3->OnStart();
-    scene->objects.push_back(lightObject3);
+    // auto lightObject3 = MakeLight(rder, renderer::POINT_LIGHT,
+    //                               glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(),
+    //                               glm::vec3(0.0f, 1.0f, 0.0f),
+    //                               2.0f, 0.0f);
+    // // lightObject3->OnStart();
+    // scene->objects.push_back(lightObject3);
+
+    for (int i = -2; i < 2; i++)
+    {
+        for (int j = -2; j < 2; j++)
+        {
+            auto light = MakeLight(rder, renderer::POINT_LIGHT,
+                                   glm::vec3(i * 4.0f, 0.0f, j * 4.0f), glm::vec3(),
+                                   glm::vec3(0.0f, 1.0f, 0.0f),
+                                   1.0f, 0.0f);
+            scene->objects.push_back(light);
+        }
+    }
 
     auto camObject = MakeCamera(
         rder,
@@ -295,8 +307,8 @@ int main()
         GLFW_KEY_K,
         GLFW_KEY_L,
     };
-    TestController controller(scene->objects[1], camSpeed, 0.25f, true, keys1);
-    TestController controller2(scene->objects[2], camSpeed, 0.25f, false, keys2);
+    TestController controller(camObject, camSpeed, 0.25f, true, keys1);
+    TestController controller2(camObject2, camSpeed, 0.25f, false, keys2);
     // TestController controller(object1, camSpeed, 0.0005f);
     // TestController controller(lightObject3, camSpeed, 0.0005f);
     //  render loop
@@ -308,6 +320,7 @@ int main()
             time_prev = glfwGetTime();
         time_delta = now - time_prev;
         time_prev = now;
+        std::cout << 1 / time_delta << std::endl;
 
         // input
         // -----

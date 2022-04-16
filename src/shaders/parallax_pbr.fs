@@ -1,7 +1,7 @@
 #version 450 core
 
-#define max_point_light 512*8
-#define max_spot_light 512*8
+#define max_point_light 65536
+#define max_spot_light 65536
 
 out vec4 FragColor;
 in vec3 FragPos;  
@@ -49,7 +49,7 @@ layout(std140, binding = 4) uniform directional_block{
     uint directional_cnt;
 };
 
-layout(std140, binding = 0) buffer LightIndexBlock{
+layout(std430, binding = 0) buffer LightIndexBlock{
     int point_index[max_point_light];
     int spot_index[max_spot_light];
     ivec2 light_index_pos;
@@ -238,8 +238,8 @@ void main()
     float height = screenSize.y;
     vec3 vpos = (view * vec4(FragPos, 1.0)).xyz;
     int zi = int(clamp(floor(16 * (-vpos.z - near) / (far - near)), 0, 15));
-    int xi = int(clamp(floor(gl_FragCoord.x / width * 16), 0, 15));
-    int yi = int(clamp(floor(gl_FragCoord.y / height * 16), 0, 15));
+    int xi = int(clamp(floor(gl_FragCoord.x / width * 8), 0, 7));
+    int yi = int(clamp(floor(gl_FragCoord.y / height * 8), 0, 7));
     ivec4 info = ivec4(imageLoad(light_grid, ivec3(xi,yi,zi)));
 
     color += handlePointLight(N, V, albedo, material.rg, info);
@@ -251,4 +251,5 @@ void main()
     // gamma correct
     //color = pow(color, vec3(1.0/2.2)); 
     FragColor = vec4(color, 1.0);
+    //FragColor = vec4(info.y,0.0,0.0,1.0);
 }

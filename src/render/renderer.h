@@ -84,7 +84,7 @@ namespace renderer
 
             glGenBuffers(1, &ssbo_totindex);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_totindex);
-            int size = sizeof(int) * (max_point_light + max_spot_light) * 8 + sizeof(glm::ivec2);
+            int size = sizeof(int) * 65536 * 2 + sizeof(glm::ivec2);
             glBufferData(GL_SHADER_STORAGE_BUFFER, size, NULL, GL_DYNAMIC_DRAW);
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_totindex);
             glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -96,7 +96,7 @@ namespace renderer
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, 16, 16, 16, 0, GL_RGBA, GL_FLOAT, NULL);
+            glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, 8, 8, 16, 0, GL_RGBA, GL_FLOAT, NULL);
             glBindImageTexture(0, lightgrid, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
             light_culler = std::make_shared<common::ComputeShaderProgram>("./src/shaders/cull_lights.cs");

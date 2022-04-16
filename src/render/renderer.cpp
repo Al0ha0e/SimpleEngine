@@ -20,15 +20,15 @@ namespace renderer
     void Renderer::cull_lights()
     {
         glUseProgram(light_culler->shader);
-        glBindBuffer(GL_UNIFORM_BUFFER, ssbo_totindex);
-        glm::vec2 st(0, 0);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_totindex);
+        glm::ivec2 st(0, 0);
         glBufferSubData(
-            GL_UNIFORM_BUFFER,
-            sizeof(int) * (max_point_light + max_spot_light) * 8,
+            GL_SHADER_STORAGE_BUFFER,
+            sizeof(int) * 65536 * 2,
             sizeof(glm::ivec2),
             glm::value_ptr(st));
-        glDispatchCompute(1, 1, 4);
-        glMemoryBarrier(GL_ALL_BARRIER_BITS);
+        glDispatchCompute(1, 1, 1);
+        glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
     }
 
     void Renderer::render(std::shared_ptr<render_queue_node> &now, bool include)
