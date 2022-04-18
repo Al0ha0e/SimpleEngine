@@ -188,8 +188,8 @@ int main()
 
     // auto lightObject3 = MakeLight(rder, renderer::POINT_LIGHT,
     //                               glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(),
-    //                               glm::vec3(0.0f, 1.0f, 0.0f),
-    //                               2.0f, 0.0f);
+    //                               glm::vec3(1.0f, 1.0f, 0.0f),
+    //                               1.0f, 0.0f);
     // // lightObject3->OnStart();
     // scene->objects.push_back(lightObject3);
 
@@ -198,7 +198,7 @@ int main()
         for (int j = -2; j < 2; j++)
         {
             auto light = MakeLight(rder, renderer::POINT_LIGHT,
-                                   glm::vec3(i * 4.0f, 0.0f, j * 4.0f), glm::vec3(),
+                                   glm::vec3(i * 8.0f, 0.0f, j * 8.0f), glm::vec3(),
                                    glm::vec3(0.0f, 1.0f, 0.0f),
                                    1.0f, 0.0f);
             scene->objects.push_back(light);
@@ -270,26 +270,25 @@ int main()
     // object1->OnStart();
     // scene.objects.push_back(object1);
 
-    // const int cnt = 8;
-    // std::shared_ptr<common::GameObject> objects[cnt][cnt][cnt];
-    // for (int i = 0; i < cnt; i++)
-    // {
-    //     for (int j = 0; j < cnt; j++)
-    //     {
-    //         for (int k = 0; k < cnt; k++)
-    //         {
-    //             auto tp = std::make_shared<common::TransformParameter>(glm::vec3(i * 4 - 2 * cnt + 2, j * 4 - 2 * cnt + 2, k * 4 - 2 * cnt + 2), glm::vec3());
-    //             auto object = std::make_shared<common::GameObject>(tp, rder);
-    //             auto render_component = std::make_shared<builtin_components::RenderableObject>(
-    //                 object,
-    //                 "./assets/materials/parallax_pbr.json",
-    //                 "./assets/models/test3.txt",
-    //                 &rManager);
-    //             object->AddComponent(render_component);
-    //             scene->objects.push_back(object);
-    //         }
-    //     }
-    // }
+    const int cnt = 8;
+    std::shared_ptr<common::GameObject> objects[cnt][cnt][cnt];
+    for (int i = 0; i < cnt; i++)
+    {
+        for (int j = 0; j < cnt; j++)
+        {
+            for (int k = 0; k < cnt; k++)
+            {
+                auto tp = std::make_shared<common::TransformParameter>(glm::vec3(i * 4 - 2 * cnt + 2, j * 4 - 2 * cnt + 2, k * 4 - 2 * cnt + 2), glm::vec3());
+                auto object = std::make_shared<common::GameObject>(tp, rder);
+                auto render_component = std::make_shared<builtin_components::RenderableObject>(
+                    object,
+                    "./assets/materials/parallax_pbr.json",
+                    "./assets/models/test3.txt");
+                object->AddComponent(render_component);
+                scene->objects.push_back(object);
+            }
+        }
+    }
 
     scene->OnStart();
 

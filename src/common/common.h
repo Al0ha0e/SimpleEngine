@@ -80,6 +80,24 @@ namespace common
             init(std::move(vs), std::move(fs));
         }
 
+        ShaderProgram(Shader &&vs)
+        {
+            shader = glCreateProgram();
+            glAttachShader(shader, vs.shader);
+            glLinkProgram(shader);
+            int success;
+            char infoLog[512];
+            glGetProgramiv(shader, GL_LINK_STATUS, &success);
+            if (!success)
+            {
+                glGetProgramInfoLog(shader, 512, NULL, infoLog);
+                std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n"
+                          << infoLog << std::endl;
+            }
+
+            vs.Dispose();
+        }
+
         void Dispose()
         {
             glDeleteProgram(shader);

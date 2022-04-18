@@ -6,15 +6,34 @@ namespace renderer
 
     void Renderer::Render()
     {
+        glDepthMask(GL_TRUE);
         glClearColor(0.0f, 0.3f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDepthMask(GL_FALSE);
         skybox->Draw();
-        glDepthMask(GL_TRUE);
         cull_lights();
+
         auto &layers = RenderLayerManager::GetInstance()->layers;
+        item_to_draw.clear();
         for (auto &layer : layers)
-            render(layer.GetQueue(OPAQUE), false);
+            cull_objects(layer.GetQueue(OPAQUE), false);
+        // TODO Material sorting
+        glDepthMask(GL_TRUE);
+        glDepthFunc(GL_LESS);
+        glColorMask(0, 0, 0, 0);
+        for (auto &item : item_to_draw)
+        {
+            glUseProgram(depth_shader->shader);
+            item->Draw(depth_shader->shader);
+        }
+        glDepthMask(GL_FALSE);
+        glDepthFunc(GL_LEQUAL);
+        glColorMask(1, 1, 1, 1);
+        for (auto &item : item_to_draw)
+        {
+            item->material->PrepareForDraw();
+            item->Draw(item->material->shader->shader);
+        }
     }
 
     void Renderer::cull_lights()
@@ -31,16 +50,11 @@ namespace renderer
         glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
     }
 
-    void Renderer::render(std::shared_ptr<render_queue_node> &now, bool include)
+    void Renderer::cull_objects(std::shared_ptr<render_queue_node> &now, bool include)
     {
         for (auto &obj : now->content.objects)
-        {
             if (include || cam_param.Test(obj->args->box) != CameraParameters::FRUSTUM_SEPARATE)
-            {
-                obj->material->PrepareForDraw();
-                obj->Draw(obj->material->shader->shader);
-            }
-        }
+                item_to_draw.push_back(obj);
 
         if (now->subnodes[0] != nullptr)
         {
@@ -48,15 +62,15 @@ namespace renderer
             {
                 if (include)
                 {
-                    render(subnode, true);
+                    cull_objects(subnode, true);
                     continue;
                 }
                 CameraParameters::frustum_relation rel = cam_param.Test(subnode->box);
 
                 if (rel == CameraParameters::FRUSTUM_INCLUDE)
-                    render(subnode, true);
+                    cull_objects(subnode, true);
                 else if (rel == CameraParameters::FRUSTUM_INTERSECT)
-                    render(subnode, false);
+                    cull_objects(subnode, false);
             }
         }
     }

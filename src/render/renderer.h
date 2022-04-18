@@ -100,6 +100,8 @@ namespace renderer
             glBindImageTexture(0, lightgrid, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
             light_culler = std::make_shared<common::ComputeShaderProgram>("./src/shaders/cull_lights.cs");
+            depth_shader = std::make_shared<common::ShaderProgram>(
+                common::Shader("./src/shaders/depth.vs", common::VERTEX_SHADER));
         }
 
         void Render();
@@ -146,9 +148,11 @@ namespace renderer
 
         std::shared_ptr<SkyBox> skybox;
         std::shared_ptr<common::ComputeShaderProgram> light_culler;
+        std::shared_ptr<common::ShaderProgram> depth_shader;
+        std::vector<std::shared_ptr<RenderQueueItem>> item_to_draw;
 
         void cull_lights();
-        void render(std::shared_ptr<render_queue_node> &now, bool include);
+        void cull_objects(std::shared_ptr<render_queue_node> &now, bool include);
     };
 }
 

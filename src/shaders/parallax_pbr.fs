@@ -230,7 +230,7 @@ void main()
     vec2 envBRDF  = texture(lutMap, vec2(max(dot(N, V), 0.0), roughness)).rg;
     vec3 specular = prefilteredColor * (kS * envBRDF.x + envBRDF.y);
 
-    vec3 color = (kD * irradiance * albedo + specular) * ao; //ambient.xyz * albedo;
+    vec3 color = (kD * irradiance * albedo + specular) * ao; //ambient.xyz * albedo;//
 
     float near = camInfo.z;
     float far = camInfo.w;
@@ -251,5 +251,4 @@ void main()
     // gamma correct
     //color = pow(color, vec3(1.0/2.2)); 
     FragColor = vec4(color, 1.0);
-    //FragColor = vec4(info.y,0.0,0.0,1.0);
 }

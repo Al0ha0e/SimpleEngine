@@ -87,8 +87,8 @@ void main()
     for(int i = 0; i < point_cnt; i++){
         Light light = pointlights[i];
 
-        float intensity = light.position.w;
-        float c = (1.0 - 5.0 * intensity);
+        float intensity = light.position.w * length(light.color.xyz);
+        float c = (1.0 - 10.0 * intensity);
         float r = -1 + sqrt(max(0.14*0.14 - 4 * 0.07 * c, 0)) / 0.14;
 
         if(test(minn, maxx, light.position.xyz, r) > 0.5){
@@ -99,8 +99,8 @@ void main()
 
     for(int i = 0; i < spot_cnt; i++){
         Light light = spotlights[i];
-        float intensity = light.position.w;
-        float c = (1.0 - 5.0 * intensity);
+        float intensity = light.position.w * length(light.color.xyz);
+        float c = (1.0 - 10.0 * intensity);
         float r = -1.0 + sqrt(0.14*0.14 + 4 * 0.07 * c) / 0.14;
         if(test(minn, maxx, light.position.xyz, r) > 0.5){
             spot_idxs[local_spot_cnt++] = i;
